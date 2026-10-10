@@ -1,0 +1,194 @@
+{
+ "groups": [
+  {
+   "group": "19x",
+   "routes": [
+    "199"
+   ],
+   "trips": 235,
+   "area_km2": 3.5,
+   "own_stops": 37,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "30x",
+   "routes": [
+    "309"
+   ],
+   "trips": 57,
+   "area_km2": 3.0,
+   "own_stops": 30,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "34x",
+   "routes": [
+    "347",
+    "348",
+    "349"
+   ],
+   "trips": 166,
+   "area_km2": 8.1,
+   "own_stops": 86,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "36x",
+   "routes": [
+    "360",
+    "361",
+    "362",
+    "363",
+    "364"
+   ],
+   "trips": 85,
+   "area_km2": 13.9,
+   "own_stops": 172,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "37x",
+   "routes": [
+    "372",
+    "373",
+    "375",
+    "377",
+    "378",
+    "379"
+   ],
+   "trips": 254,
+   "area_km2": 10.7,
+   "own_stops": 187,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "38x",
+   "routes": [
+    "380",
+    "381",
+    "382",
+    "383",
+    "384",
+    "385",
+    "N385"
+   ],
+   "trips": 291,
+   "area_km2": 8.5,
+   "own_stops": 108,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "39x",
+   "routes": [
+    "390"
+   ],
+   "trips": 110,
+   "area_km2": 2.4,
+   "own_stops": 39,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "40x",
+   "routes": [
+    "402"
+   ],
+   "trips": 48,
+   "area_km2": 0.1,
+   "own_stops": 1,
+   "uq_stop_visits": 96
+  },
+  {
+   "group": "41x",
+   "routes": [
+    "411",
+    "412",
+    "414",
+    "415",
+    "416",
+    "417",
+    "N413"
+   ],
+   "trips": 405,
+   "area_km2": 6.8,
+   "own_stops": 117,
+   "uq_stop_visits": 333
+  },
+  {
+   "group": "42x",
+   "routes": [
+    "425",
+    "426",
+    "427",
+    "428"
+   ],
+   "trips": 187,
+   "area_km2": 5.9,
+   "own_stops": 67,
+   "uq_stop_visits": 126
+  },
+  {
+   "group": "43x",
+   "routes": [
+    "430",
+    "431",
+    "432",
+    "433",
+    "435"
+   ],
+   "trips": 150,
+   "area_km2": 10.8,
+   "own_stops": 92,
+   "uq_stop_visits": 48
+  },
+  {
+   "group": "44x",
+   "routes": [
+    "443",
+    "444",
+    "445",
+    "446"
+   ],
+   "trips": 201,
+   "area_km2": 10.1,
+   "own_stops": 59,
+   "uq_stop_visits": 0
+  },
+  {
+   "group": "47x",
+   "routes": [
+    "470",
+    "471",
+    "475",
+    "476"
+   ],
+   "trips": 140,
+   "area_km2": 7.4,
+   "own_stops": 121,
+   "uq_stop_visits": 0
+  }
+ ],
+ "hubs": [
+  {
+   "name": "UQ Chancellors Place",
+   "lat": -27.49813,
+   "lon": 153.0111,
+   "groups": {
+    "40x": 96,
+    "41x": 333,
+    "42x": 126,
+    "43x": 48
+   },
+   "routes": [
+    "402",
+    "411",
+    "412",
+    "414",
+    "427",
+    "428",
+    "432"
+   ]
+  }
+ ],
+ "day": "2026-10-14",
+ "feed": "Translink SEQ GTFS, 10 Oct \u2013 9 Dec 2026"
+}

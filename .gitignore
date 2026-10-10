@@ -1,0 +1,6 @@
+# GTFS downloads and build output
+gtfs/
+*.zip
+work/
+__pycache__/
+.venv/
