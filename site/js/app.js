@@ -41,7 +41,7 @@ let L_base,L_zone,L_shared,L_route,L_stops,L_spokes,L_labels,L_hub;
 let L_hl=null,L_fp=null,L_rs=null,pinned=null,hover=null;
 let focus=null,view='zones',hoverFam=null;
 // A hovered legend family previews over the focused group; otherwise only the focused group stays bright.
-const dim=g=>hoverFam?FAM[g]!==hoverFam:(focus&&g!==focus);
+const dim=g=>hoverFam?(hoverFam==='hub'?!(HUB&&HUB.groups[g]):FAM[g]!==hoverFam):(focus&&g!==focus);
 function draw(){
   [L_base,L_zone,L_shared,L_fp,L_route,L_stops,L_spokes,L_labels,L_hub,L_hl].forEach(l=>l&&map.removeLayer(l));L_hl=null;L_fp=null;
   L_base=L.layerGroup([
@@ -149,23 +149,24 @@ const list=document.getElementById('list');
 const COLLAPSED_KEY='busrads.collapsed';
 const collapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(COLLAPSED_KEY))||[]}catch(e){return []}})());
 function saveCollapsed(){try{localStorage.setItem(COLLAPSED_KEY,JSON.stringify([...collapsed]))}catch(e){}}
-// The hub card starts collapsed; opening it is remembered per browser.
+// The hub section starts collapsed; opening it is remembered per browser.
 const HUB_KEY='busrads.hubOpen';
+let spokesPreview=false;
 let hubOpen=(()=>{try{return localStorage.getItem(HUB_KEY)==='1'}catch(e){return false}})();
 const canHover=window.matchMedia('(hover: hover)').matches;
 const famLabel=g=>(fams.find(f=>f[0]===FAM[g])||[])[1];
 function hubCard(){if(!HUB)return '';const h=HUB;const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
-  return `<div class="hubcard"><button class="hub-btn" id="hubBtn" aria-expanded="${hubOpen}"><span class="hub-title"><i class="chev" aria-hidden="true"></i><strong>${h.name}</strong></span><span class="num">${tot} visits/day</span></button><div class="hub-body"${hubOpen?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" id="hubGo">Show on map</button></div></div>`}
+  return `<button class="fam hubfam" id="hubBtn" aria-expanded="${hubOpen}"><span><i class="chev" aria-hidden="true"></i>${h.name}</span><span>${tot} visits</span></button><div class="hub-body"${hubOpen?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" id="hubGo">Show on map</button></div>`}
 function renderList(){
   list.innerHTML=hubCard()+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
     const open=!collapsed.has(lab);
     return `<button class="fam" data-f="${lab}" data-k="${k}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${lab}</span><span>${t} trips</span></button><div class="fam-body"${open?'':' hidden'}>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')+'</div>'}).join('');
   // Hovering a family header previews it on the map. Pointer devices only: on touch, a tap
   // would leave the preview stuck on, and tapping already collapses the family.
-  if(canHover)list.querySelectorAll('.fam').forEach(b=>{
+  if(canHover)list.querySelectorAll('.fam:not(.hubfam)').forEach(b=>{
     b.onmouseenter=()=>{hoverFam=b.dataset.k;restyle()};
     b.onmouseleave=()=>{hoverFam=null;restyle()};});
-  list.querySelectorAll('.fam').forEach(b=>b.onclick=()=>{const f=b.dataset.f;collapsed.has(f)?collapsed.delete(f):collapsed.add(f);saveCollapsed();renderList()});
+  list.querySelectorAll('.fam:not(.hubfam)').forEach(b=>b.onclick=()=>{const f=b.dataset.f;collapsed.has(f)?collapsed.delete(f):collapsed.add(f);saveCollapsed();renderList()});
   list.querySelectorAll('.grp').forEach(b=>b.onclick=()=>setFocus(b.dataset.g));
   const chips=[...list.querySelectorAll('.chip')];
   chips.forEach(c=>{const r=c.dataset.r;
@@ -175,6 +176,10 @@ function renderList(){
   if(HUB){
     document.getElementById('hubBtn').onclick=()=>{hubOpen=!hubOpen;try{localStorage.setItem(HUB_KEY,hubOpen?'1':'0')}catch(e){}renderList()};
     document.getElementById('hubGo').onclick=()=>{setFocus(null);map.flyTo([HUB.lat,HUB.lon],14)};
+    // Hovering previews the groups that serve the hub, with their spokes even if the toggle is off.
+    if(canHover){const b=document.getElementById('hubBtn');
+      b.onmouseenter=()=>{hoverFam='hub';if(L_spokes&&!map.hasLayer(L_spokes)){L_spokes.addTo(map);spokesPreview=true}restyle()};
+      b.onmouseleave=()=>{hoverFam=null;if(spokesPreview){spokesPreview=false;L_spokes&&map.removeLayer(L_spokes)}restyle()};}
   }
 }
 function setFocus(g){focus=(focus===g)?null:g;
