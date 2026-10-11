@@ -224,7 +224,8 @@ function setFocus(g){focus=(focus===g)?null:g;
 function goHome(){map.flyToBounds(ZB,{padding:[16,16]})}
 function groupBounds(g){const b=L.geoJSON(routes,{filter:f=>f.properties.group===g}).getBounds();if(b.isValid())map.flyToBounds(b,{padding:[30,30],maxZoom:14})}
 const dayText=new Date(index.day+'T00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
-document.getElementById('foot').textContent=`${index.feed}. Trip counts are for ${dayText}. School (7xx) and special (9xx) runs are not in this feed. Basemap drawn from Translink route paths. Unofficial; not affiliated with Brisbane City Council or Translink.`;
+document.getElementById('foot').textContent=`${index.feed}. Trip counts are for ${dayText}. School (7xx) and special (9xx) runs are not in this feed. Basemap drawn from Translink route paths. Unofficial; not affiliated with Brisbane City Council or Translink. `;
+{const a=document.createElement('a');a.href='help.html';a.textContent='How this map works';document.getElementById('foot').append(a)}
 const views={vZones:'zones',vRoutes:'routes',vBoth:'both'};
 Object.keys(views).forEach(id=>document.getElementById(id).onclick=()=>{view=views[id];Object.keys(views).forEach(k=>document.getElementById(k).setAttribute('aria-pressed',k===id));draw()});
 ['tSpokes','tShared','tLabels'].forEach(id=>document.getElementById(id).onchange=draw);

@@ -58,8 +58,8 @@ jobs:
         # (Data files are versioned by the build id in index.json.)
         run: |
           V=${GITHUB_SHA::8}
-          sed -i "s#css/app.css#css/app.css?v=$V#; s#js/app.js#js/app.js?v=$V#" site/index.html
-          grep -n "?v=" site/index.html
+          sed -i "s#css/app.css#css/app.css?v=$V#; s#css/help.css#css/help.css?v=$V#; s#js/app.js#js/app.js?v=$V#" site/*.html
+          grep -n "?v=" site/*.html
 
       - uses: actions/configure-pages@v6
 

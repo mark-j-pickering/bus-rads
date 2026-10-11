@@ -12,7 +12,7 @@ Toowong and Carina depots are live, plus an "All" view of every Brisbane City Co
 
 - `busrads/`: the Python data build
 - `depots/`: route lists (`<depot>.txt`) and display config (`<depot>.json`) for each depot
-- `site/`: the static site (`index.html`, `css/`, `js/`); the build writes `site/data/`
+- `site/`: the static site (`index.html`, `help.html`, `css/`, `js/`); the build writes `site/data/`
 - `.github/workflows/deploy.yml`: downloads the feed, builds and deploys to GitHub Pages
 - `prototype/`: the original single-page prototype, kept for reference
 
