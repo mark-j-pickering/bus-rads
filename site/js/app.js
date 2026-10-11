@@ -1,5 +1,6 @@
 (async function(){
-const DEPOT='toowong';
+// ?depot=<id> picks the depot until the depot selector exists; Toowong by default.
+const DEPOT=(new URLSearchParams(location.search).get('depot')||'toowong').replace(/[^a-z]/g,'');
 const get=p=>fetch(p).then(r=>{if(!r.ok)throw new Error(`${p}: HTTP ${r.status}`);return r.json()});
 const D=`data/${DEPOT}/`;
 let base,zones,cells,rbuf,gbuf,routes,stops,meta;
@@ -18,12 +19,12 @@ const col=g=>css('--g'+g)||'#888';
 const fams=meta.families.map((f,i)=>['f'+i,f.label]);
 const FAM={};meta.families.forEach((f,i)=>f.groups.forEach(g=>FAM[g]='f'+i));
 meta.groups.forEach(g=>{if(!FAM[g.group]){FAM[g.group]='other';if(!fams.some(f=>f[0]==='other'))fams.push(['other','Other'])}});
-const AREA=meta.areas, PLACES=meta.places, HUB=meta.hubs[0]||null;
+const AREA=meta.areas, PLACES=meta.places, HUBS=meta.hubs;
 
 document.getElementById('eyebrow').textContent=`${meta.name} depot · weekday`;
 document.getElementById('map').setAttribute('aria-label',`Map of ${meta.name} depot service zones`);
 document.title=`Bus RADS · ${meta.name}`;
-if(HUB)document.getElementById('spokesName').textContent=HUB.short;
+if(HUBS.length)document.getElementById('spokesName').textContent=HUBS.length===1?HUBS[0].short:'Hub';
 else document.getElementById('lSpokes').hidden=true;
 
 // Fitting bounds into a zero-size container gives a NaN zoom, so wait until the map has a size
@@ -37,11 +38,11 @@ const ZB=L.geoJSON(zones).getBounds();
 map.fitBounds(ZB,{padding:[16,16]});
 map.attributionControl.setPrefix(false).addAttribution('Data: Translink SEQ GTFS (CC BY 4.0)');
 const R=L.canvas({padding:.3});
-let L_base,L_zone,L_shared,L_route,L_stops,L_spokes,L_labels,L_hub;
+let L_base,L_zone,L_shared,L_route,L_stops,L_spokes,L_labels,L_hub,hubSpokes=[];
 let L_hl=null,L_fp=null,L_rs=null,pinned=null,hover=null;
 let focus=null,view='zones',hoverFam=null;
 // A hovered legend family previews over the focused group; otherwise only the focused group stays bright.
-const dim=g=>hoverFam?(hoverFam==='hub'?!(HUB&&HUB.groups[g]):FAM[g]!==hoverFam):(focus&&g!==focus);
+const dim=g=>hoverFam?(hoverFam.startsWith('hub:')?!HUBS[+hoverFam.slice(4)].groups[g]:FAM[g]!==hoverFam):(focus&&g!==focus);
 function draw(){
   [L_base,L_zone,L_shared,L_fp,L_route,L_stops,L_spokes,L_labels,L_hub,L_hl].forEach(l=>l&&map.removeLayer(l));L_hl=null;L_fp=null;
   L_base=L.layerGroup([
@@ -68,17 +69,14 @@ function draw(){
       return L.circleMarker(ll,{radius:2.6,color:k,weight:1,fillColor:k,fillOpacity:.9,opacity:(FAM[c]&&dim(c))?.15:.9,group:c})},
     onEachFeature:(f,l)=>l.bindPopup(()=>stopHTML(f.properties,true))});
   if(map.getZoom()>=14) L_stops.addTo(map);
-  // hub + spokes
-  L_spokes=L_hub=null;
-  if(HUB){
-    const h=HUB;
-    L_spokes=L.layerGroup(meta.groups.filter(g=>h.groups[g.group]).map(g=>{
-      const v=h.groups[g.group];return L.polyline([[g.cy,g.cx],[h.lat,h.lon]],{renderer:R,color:col(g.group),weight:2+Math.sqrt(v)*0.7,opacity:dim(g.group)?.12:.75,lineCap:'round',group:g.group})
-        .bindPopup(`<div class="pp"><h3>${g.group} → ${h.short}</h3>${v} weekday stop visits at ${h.name}</div>`)}));
-    if(document.getElementById('tSpokes').checked) L_spokes.addTo(map);
-    L_hub=L.circleMarker([h.lat,h.lon],{renderer:R,radius:9,color:css('--panel'),weight:3,fillColor:css('--fg'),fillOpacity:1})
-      .bindPopup(`<div class="pp"><h3>${h.name}</h3>Routes ${h.routes.join(', ')}<div class="m">${Object.values(h.groups).reduce((a,b)=>a+b,0)} weekday stop visits</div></div>`).addTo(map);
-  }
+  // hubs + spokes: one spoke per group from its anchor to each hub it visits, width scaled to visits
+  hubSpokes=HUBS.map(h=>L.layerGroup(meta.groups.filter(g=>h.groups[g.group]).map(g=>{
+    const v=h.groups[g.group];return L.polyline([[g.cy,g.cx],[h.lat,h.lon]],{renderer:R,color:col(g.group),weight:2+Math.sqrt(v)*0.7,opacity:dim(g.group)?.12:.75,lineCap:'round',group:g.group})
+      .bindPopup(`<div class="pp"><h3>${g.group} → ${h.short}</h3>${v} weekday stop visits at ${h.name}</div>`)})));
+  L_spokes=L.layerGroup(hubSpokes);
+  if(HUBS.length&&document.getElementById('tSpokes').checked) L_spokes.addTo(map);
+  L_hub=L.layerGroup(HUBS.map(h=>L.circleMarker([h.lat,h.lon],{renderer:R,radius:9,color:css('--panel'),weight:3,fillColor:css('--fg'),fillOpacity:1})
+    .bindPopup(`<div class="pp"><h3>${h.name}</h3>Routes ${h.routes.join(', ')}<div class="m">${Object.values(h.groups).reduce((a,b)=>a+b,0)} weekday stop visits</div></div>`))).addTo(map);
   L_labels=L.layerGroup(PLACES.map(([n,la,lo])=>L.marker([la,lo],{opacity:0,interactive:false,icon:L.divIcon({className:'',iconSize:[0,0]})}).bindTooltip(n,{permanent:true,direction:'center',className:'lbl-wrap',opacity:1}).on('add',function(){const t=this.getTooltip();t&&t.getElement()&&t.getElement().classList.add('lbl')})));
   if(document.getElementById('tLabels').checked&&map.getZoom()>=12) L_labels.addTo(map);
   applyHL();
@@ -114,7 +112,7 @@ function pinRoute(r){hover=null;pinned=(pinned===r)?null:r;document.querySelecto
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.pchip');if(b)pinRoute(b.dataset.r)},true);
 // Re-apply dimming to the existing layers without rebuilding them (cheap enough for hover).
 function restyle(){
-  L_spokes&&L_spokes.eachLayer(l=>l.setStyle({opacity:dim(l.options.group)?.12:.75}));
+  hubSpokes.forEach(hs=>hs.eachLayer(l=>l.setStyle({opacity:dim(l.options.group)?.12:.75})));
   L_stops&&L_stops.eachLayer(l=>FAM[l.options.group]&&l.setStyle({opacity:dim(l.options.group)?.15:.9}));
   applyHL();
 }
@@ -149,16 +147,16 @@ const list=document.getElementById('list');
 const COLLAPSED_KEY='busrads.collapsed';
 const collapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(COLLAPSED_KEY))||[]}catch(e){return []}})());
 function saveCollapsed(){try{localStorage.setItem(COLLAPSED_KEY,JSON.stringify([...collapsed]))}catch(e){}}
-// The hub section starts collapsed; opening it is remembered per browser.
-const HUB_KEY='busrads.hubOpen';
-let spokesPreview=false;
-let hubOpen=(()=>{try{return localStorage.getItem(HUB_KEY)==='1'}catch(e){return false}})();
+// Hub sections start collapsed; which ones are open is remembered per browser, by hub name.
+const HUBS_KEY='busrads.hubsOpen';
+const hubsOpen=new Set((()=>{try{return JSON.parse(localStorage.getItem(HUBS_KEY))||[]}catch(e){return []}})());
+let spokesPreview=null;
 const canHover=window.matchMedia('(hover: hover)').matches;
 const famLabel=g=>(fams.find(f=>f[0]===FAM[g])||[])[1];
-function hubCard(){if(!HUB)return '';const h=HUB;const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
-  return `<button class="fam hubfam" id="hubBtn" aria-expanded="${hubOpen}"><span><i class="chev" aria-hidden="true"></i>${h.name}</span><span>${tot} visits</span></button><div class="hub-body"${hubOpen?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" id="hubGo">Show on map</button></div>`}
+function hubCard(h,i){const open=hubsOpen.has(h.name);const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
+  return `<button class="fam hubfam" data-h="${i}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${h.name}</span><span>${tot} visits</span></button><div class="hub-body"${open?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" data-h="${i}">Show on map</button></div>`}
 function renderList(){
-  list.innerHTML=hubCard()+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
+  list.innerHTML=HUBS.map(hubCard).join('')+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
     const open=!collapsed.has(lab);
     return `<button class="fam" data-f="${lab}" data-k="${k}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${lab}</span><span>${t} trips</span></button><div class="fam-body"${open?'':' hidden'}>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')+'</div>'}).join('');
   // Hovering a family header previews it on the map. Pointer devices only: on touch, a tap
@@ -183,14 +181,13 @@ function renderList(){
     c.onmouseenter=()=>{hover=r;applyHL()};
     c.onmouseleave=()=>{hover=null;applyHL()};
     c.onclick=()=>pinRoute(r);});
-  if(HUB){
-    document.getElementById('hubBtn').onclick=()=>{hubOpen=!hubOpen;try{localStorage.setItem(HUB_KEY,hubOpen?'1':'0')}catch(e){}renderList()};
-    document.getElementById('hubGo').onclick=()=>{setFocus(null);map.flyTo([HUB.lat,HUB.lon],14)};
-    // Hovering previews the groups that serve the hub, with their spokes even if the toggle is off.
-    if(canHover){const b=document.getElementById('hubBtn');
-      b.onmouseenter=()=>{hoverFam='hub';if(L_spokes&&!map.hasLayer(L_spokes)){L_spokes.addTo(map);spokesPreview=true}restyle()};
-      b.onmouseleave=()=>{hoverFam=null;if(spokesPreview){spokesPreview=false;L_spokes&&map.removeLayer(L_spokes)}restyle()};}
-  }
+  list.querySelectorAll('.hubfam').forEach(b=>{const h=HUBS[+b.dataset.h];
+    b.onclick=()=>{hubsOpen.has(h.name)?hubsOpen.delete(h.name):hubsOpen.add(h.name);try{localStorage.setItem(HUBS_KEY,JSON.stringify([...hubsOpen]))}catch(e){}renderList()};
+    // Hovering previews the groups that serve this hub, with its spokes even if the toggle is off.
+    if(canHover){
+      b.onmouseenter=()=>{hoverFam='hub:'+b.dataset.h;const hs=hubSpokes[+b.dataset.h];if(hs&&!map.hasLayer(L_spokes)){hs.addTo(map);spokesPreview=hs}restyle()};
+      b.onmouseleave=()=>{hoverFam=null;if(spokesPreview){map.removeLayer(spokesPreview);spokesPreview=null}restyle()};}});
+  list.querySelectorAll('.hub-go').forEach(b=>{const h=HUBS[+b.dataset.h];b.onclick=()=>{setFocus(null);map.flyTo([h.lat,h.lon],14)}});
 }
 function setFocus(g){focus=(focus===g)?null:g;
   if(focus&&collapsed.delete(famLabel(focus)))saveCollapsed();

@@ -8,8 +8,8 @@ from shapely.geometry import LineString, box
 from .analysis import METRIC, WGS84
 from .export import write_json
 
-BOUNDS = (152.80, -27.62, 153.12, -27.33)   # what's drawn
-CLIP = (152.75, -27.65, 153.15, -27.30)     # points read, a little wider
+BOUNDS = (152.80, -27.62, 153.23, -27.33)   # what's drawn: Moggill to Wynnum
+CLIP = (152.75, -27.65, 153.26, -27.30)     # points read, a little wider
 LAYERS = [("3", "roads", 12), ("2", "rail", 15), ("4", "river", 20)]  # route_type, key, simplify m
 
 

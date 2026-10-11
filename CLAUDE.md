@@ -29,9 +29,10 @@ Working through the goals one step at a time, Toowong end-to-end first:
 
 1. Done: Python build (`busrads/`, `python -m busrads build`) replacing `prototype/scripts/build.py`. Output matches the prototype for Toowong.
 2. Done: static site (`site/`) for Toowong, still on the drawn basemap (`base.json`, built by `busrads/basemap.py`) by Mark's choice.
-3. Done: `.github/workflows/deploy.yml` deploys to Pages on every push to `main` or by hand. Builds only the depots in its `DEPOTS` env var (currently `toowong`).
-4. Next: Carina. Add `depots/carina.json` (areas, hubs, families). Two-digit routes 29 and 61 currently come out as groups "29x" and "61x" and need a rule.
-5. Depot selector and "All", pre-built per selection (see design below).
+3. Done: `.github/workflows/deploy.yml` deploys to Pages on every push to `main` or by hand. Builds only the depots in its `DEPOTS` env var (currently `toowong carina`).
+   - Since then: legend families and hub sections are collapsible (hubs start collapsed), hovering a header previews it on the map, hub spokes are off by default, and collapsing a family clears a focus or pin inside it.
+4. Done: Carina (`depots/carina.json`), viewable at `?depot=carina` until the selector exists. Mark chose two hubs, Woolloongabba station and Carindale Shopping Centre, so the page now handles any number of hubs. One- and two-digit routes (29, 61) are each their own group, named by the number. Carina's area descriptions and suburb label positions are drafts for Mark to check.
+5. Next: depot selector and "All", pre-built per selection (see design below).
 6. Weekly schedule on the workflow, redeploying only when the feed changed.
 7. Docs.
 
@@ -124,5 +125,5 @@ Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, nump
 
 - Pick a tile provider: CARTO (needs a key) or OpenFreeMap (needs MapLibre GL). See Progress.
 - Decide whether to add the school feed as a separate layer.
-- Write Carina group descriptions and decide its hubs.
+- Mark to check Carina's draft area descriptions and suburb labels (`depots/carina.json`).
 - Optionally draw the event precinct overlays (Suncorp, Gabba).

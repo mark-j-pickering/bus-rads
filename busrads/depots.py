@@ -13,8 +13,12 @@ def route_key(r):
 
 
 def group_of(route):
-    """Prefix group of a route number: 380 -> 38x, N385 -> 38x."""
-    return route.lstrip("N")[:2] + "x"
+    """Prefix group of a route number: 380 -> 38x, N385 -> 38x.
+
+    One- and two-digit routes (29, 61) have no prefix to share, so each is
+    its own group, named by its number."""
+    n = route.lstrip("N")
+    return n[:2] + "x" if len(n) >= 3 else n
 
 
 def parse_route_list(text):

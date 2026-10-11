@@ -19,6 +19,9 @@ def test_header_line_is_skipped_even_if_numeric():
 def test_group_and_feed_filter():
     assert group_of("380") == "38x"
     assert group_of("N385") == "38x"
+    assert group_of("29") == "29"
+    assert group_of("61") == "61"
+    assert group_of("N61") == "61"
     assert not in_main_feed("706")
     assert not in_main_feed("922")
     assert in_main_feed("N385")
