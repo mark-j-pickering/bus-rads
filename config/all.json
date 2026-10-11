@@ -1,0 +1,11 @@
+{
+ "name": "All routes",
+ "families": {
+  "1": "100s · south",
+  "2": "200s · east",
+  "3": "300s · north",
+  "4": "400s · west",
+  "5": "500s · cross-town",
+  "0": "Under 100 · inner & cross-city"
+ }
+}

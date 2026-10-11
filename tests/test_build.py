@@ -25,6 +25,8 @@ def test_group_and_feed_filter():
     assert not in_main_feed("706")
     assert not in_main_feed("922")
     assert in_main_feed("N385")
+    assert in_main_feed("77")     # Eight Mile Plains - Chermside, not a school run
+    assert in_main_feed("9")
 
 
 def routes(*rows):
@@ -96,3 +98,19 @@ def test_combine_merges_depots():
     assert c.areas["19x"] == "West End ferry link; South Brisbane loop"
     assert [p[0] for p in c.places] == ["City", "The Gap", "Carina"]
     assert c.anchors == {"40x": [1, 2]}
+
+
+def test_hundreds_palette():
+    from busrads.palette import hundreds_palette
+    groups = ["10x", "11x", "12x", "20x", "21x", "38x", "41x", "29", "61"]
+    p = hundreds_palette(groups)
+    assert set(p["light"]) == set(p["dark"]) == set(groups)
+    assert len(set(p["light"].values())) == len(groups)     # every group its own shade
+    assert hundreds_palette(list(reversed(groups))) == p      # deterministic, order-independent
+
+
+def test_auto_area():
+    from busrads.depots import auto_area
+    assert auto_area(["Parkinson - City", "Parkinson - City via Hellawell Rd",
+                      "Sunnybank Hills - City Rocket"]) == "Parkinson, Sunnybank Hills"
+    assert auto_area(["City Loop (Clockwise)"]) == "City Loop"

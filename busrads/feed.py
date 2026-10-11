@@ -46,6 +46,12 @@ def select_routes(routes, wanted):
     return sel.drop(columns="operator"), op
 
 
+def operator_routes(routes, op):
+    """Every bus route run by the operator, e.g. all of Brisbane City Council's."""
+    bus = routes[routes.route_type == BUS]
+    return bus[bus.route_id.map(operator_of) == op]
+
+
 def active_services(calendar, calendar_dates, day):
     ds = day.strftime("%Y%m%d")
     wd = day.strftime("%A").lower()

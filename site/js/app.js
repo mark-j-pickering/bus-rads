@@ -7,7 +7,10 @@ try{[base,index]=await Promise.all([get('data/base.json'),get('data/index.json')
 const DEPOTS=index.depots;
 
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const col=g=>css('--g'+g)||'#888';
+// Group colours: the "All" view ships its own (one hue family per hundred) in meta.colors;
+// depot views use the hand-picked --g<group> colours in the CSS.
+const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches};
+const col=g=>(meta&&meta.colors&&meta.colors[isDark()?'dark':'light'][g])||css('--g'+g)||'#888';
 
 // Fitting bounds into a zero-size container gives a NaN zoom, so wait until the map has a size
 // (e.g. a page opened in a background tab), then keep Leaflet in step with later resizes.
@@ -112,7 +115,7 @@ function hitStop(ll){const lp=map.latLngToLayerPoint(ll);let best=null,bd=9;
   for(const g of [L_rs,L_stops]){if(!g||!map.hasLayer(g))continue;g.eachLayer(l=>{if(!l._point)return;const d=l._point.distanceTo(lp);if(d<bd){bd=d;best=l}});if(best)break}
   return best?best.feature.properties:null}
 function stopHTML(p,click){
-  const chips=p.rc.split(' ').filter(Boolean).map(x=>{const [r,n]=x.split(':');return `<${click?'button':'span'} class="tchip${click?' pchip':''}${(pinned||hover)===r?' on':''}" data-r="${r}" style="--c:var(--g${RG[r]})">${r}<small>${n}</small></${click?'button':'span'}>`}).join('');
+  const chips=p.rc.split(' ').filter(Boolean).map(x=>{const [r,n]=x.split(':');return `<${click?'button':'span'} class="tchip${click?' pchip':''}${(pinned||hover)===r?' on':''}" data-r="${r}" style="--c:${col(RG[r])}">${r}<small>${n}</small></${click?'button':'span'}>`}).join('');
   return `<div class="sn">${p.stop_name}</div><div class="tchips">${chips}</div>`+(p.other?`<div class="m">Other routes: ${p.other}</div>`:'')+`<div class="m">Serviced ${Math.round(p.ntrips)} times each weekday by these routes${click?' · tap a route to highlight it':''}</div>`}
 let hovPending=false,lastMove=null;
 map.on('mousemove',e=>{lastMove=e.latlng;if(hovPending)return;hovPending=true;requestAnimationFrame(()=>{hovPending=false;
@@ -173,11 +176,11 @@ let spokesPreview=null;
 const canHover=window.matchMedia('(hover: hover)').matches;
 const famLabel=g=>(fams.find(f=>f[0]===FAM[g])||[])[1];
 function hubCard(h,i){const open=hubsOpen.has(h.name);const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
-  return `<button class="fam hubfam" data-h="${i}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${h.name}</span><span>${tot} visits</span></button><div class="hub-body"${open?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" data-h="${i}">Show on map</button></div>`}
+  return `<button class="fam hubfam" data-h="${i}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${h.name}</span><span>${tot} visits</span></button><div class="hub-body"${open?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:${col(g)}"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" data-h="${i}">Show on map</button></div>`}
 function renderList(){
   list.innerHTML=HUBS.map(hubCard).join('')+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
     const open=!collapsed.has(lab);
-    return `<button class="fam" data-f="${lab}" data-k="${k}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${lab}</span><span>${t} trips</span></button><div class="fam-body"${open?'':' hidden'}>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')+'</div>'}).join('');
+    return `<button class="fam" data-f="${lab}" data-k="${k}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${lab}</span><span>${t} trips</span></button><div class="fam-body"${open?'':' hidden'}>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:${col(g.group)}"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:${col(g.group)}" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')+'</div>'}).join('');
   // Hovering a family header previews it on the map. Pointer devices only: on touch, a tap
   // would leave the preview stuck on, and tapping already collapses the family.
   if(canHover)list.querySelectorAll('.fam:not(.hubfam)').forEach(b=>{
@@ -220,8 +223,10 @@ const views={vZones:'zones',vRoutes:'routes',vBoth:'both'};
 Object.keys(views).forEach(id=>document.getElementById(id).onclick=()=>{view=views[id];Object.keys(views).forEach(k=>document.getElementById(k).setAttribute('aria-pressed',k===id));draw()});
 ['tSpokes','tShared','tLabels'].forEach(id=>document.getElementById(id).onchange=draw);
 const panel=document.getElementById('panel');document.getElementById('sheetTab').onclick=()=>panel.classList.toggle('min');
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
-new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+// Theme changes recolour both the map and the panel (colours are resolved per theme in JS).
+const retheme=()=>{renderList();draw()};
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',retheme);
+new MutationObserver(retheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 // depot selector
 const seg=document.getElementById('depotSeg');
 seg.innerHTML=DEPOTS.map(d=>`<button data-d="${d.id}" aria-pressed="false">${d.id==='all'?'All':d.name}</button>`).join('');

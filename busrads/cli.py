@@ -1,12 +1,13 @@
 """python -m busrads build [--gtfs DIR] [--out DIR] [--depot ID ...]"""
 import argparse
 import datetime as dt
+import json
 import sys
 import time
 from pathlib import Path
 
-from . import analysis, basemap, depots, export
-from .feed import BuildError, Feed, pick_service_day, select_routes
+from . import analysis, basemap, depots, export, palette
+from .feed import BuildError, Feed, operator_routes, pick_service_day, select_routes
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -27,7 +28,8 @@ def build(gtfs_dir, out_dir, depots_dir, ids, day=None):
     feed = Feed(gtfs_dir)
     wanted = sorted({r for d in sel for r in d.feed_routes}, key=depots.route_key)
     routes, op = select_routes(feed.routes, wanted)
-    log(f"{len(routes)} routes, operator suffix -{op}")
+    every = operator_routes(feed.routes, op)
+    log(f"{len(routes)} depot routes, {len(every)} operator routes, operator suffix -{op}")
 
     if day is None:
         day = pick_service_day(feed.start, feed.calendar, feed.calendar_dates,
@@ -37,18 +39,20 @@ def build(gtfs_dir, out_dir, depots_dir, ids, day=None):
 
     stop_times = feed.stop_times(day_trips.trip_id)
     log(f"{len(stop_times)} stop_times rows")
-    shape_ids = day_trips[day_trips.route_id.isin(set(routes.route_id))].shape_id
+    shape_ids = day_trips[day_trips.route_id.isin(set(every.route_id))].shape_id
     shape_points = feed.shapes(shape_ids)
     log(f"{shape_points.shape_id.nunique()} shapes")
 
-    # With more than one depot, also build "All": one selection over every depot's routes.
-    # Group ownership of stops depends on which routes are included, so it can't be merged afterwards.
-    selections = sel + ([depots.combine(sel)] if len(sel) > 1 else [])
-    built = []
+    # "All" covers every route the operator runs, not just the depot lists. Group ownership of
+    # stops depends on which routes are included, so it is built as its own selection.
+    all_cfg = json.loads((ROOT / "config" / "all.json").read_text(encoding="utf-8"))
+    selections = sel + [depots.all_routes_selection(sel, every, all_cfg)]
+    built, bounds = [], []
     for d in selections:
         res = analysis.build_selection(
-            feed, d, routes[routes.route_short_name.isin(d.feed_routes)],
+            feed, d, every[every.route_short_name.isin(d.feed_routes)],
             day_trips, stop_times, shape_points)
+        bounds.append(res["zones"].to_crs(4326).total_bounds)
         dest = Path(out_dir) / d.id
         for key in ("zones", "cells", "routes", "routebuf", "groupbuf", "stops"):
             export.write_geojson(res[key], dest / f"{key}.geojson")
@@ -59,12 +63,18 @@ def build(gtfs_dir, out_dir, depots_dir, ids, day=None):
             families=d.families, areas=d.areas, places=d.places,
             not_in_feed=[x for x in d.routes if not depots.in_main_feed(x)],
         )
+        if d.id == "all":
+            # One hue family per hundred; depot views use the site's hand-picked colours.
+            meta["colors"] = palette.hundreds_palette([g["group"] for g in res["groups"]])
         export.write_json(meta, dest / "meta.json")
         log(f"{d.id}: {len(res['groups'])} groups, {res['trips']} trips -> {dest}")
         built.append(dict(id=d.id, name=d.name))
 
     export.write_json(dict(feed=feed.label, day=str(day), depots=built), Path(out_dir) / "index.json")
-    basemap.build_basemap(feed, Path(out_dir) / "base.json")
+    w, s, e, n = (min(b[0] for b in bounds), min(b[1] for b in bounds),
+                  max(b[2] for b in bounds), max(b[3] for b in bounds))
+    pad = 0.03  # about 3 km of context around the zones
+    basemap.build_basemap(feed, Path(out_dir) / "base.json", (w - pad, s - pad, e + pad, n + pad))
     log("basemap -> base.json")
 
 
