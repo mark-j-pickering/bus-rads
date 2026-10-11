@@ -138,11 +138,18 @@ map.on('zoomend',()=>{ syncStops();
   const on=document.getElementById('tLabels').checked&&map.getZoom()>=12; on?L_labels.addTo(map):map.removeLayer(L_labels)});
 // panel
 const list=document.getElementById('list');
+// Collapsed families are remembered per browser, keyed by family label so they carry across depots.
+const COLLAPSED_KEY='busrads.collapsed';
+const collapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(COLLAPSED_KEY))||[]}catch(e){return []}})());
+function saveCollapsed(){try{localStorage.setItem(COLLAPSED_KEY,JSON.stringify([...collapsed]))}catch(e){}}
+const famLabel=g=>(fams.find(f=>f[0]===FAM[g])||[])[1];
 function hubCard(){if(!HUB)return '';const h=HUB;const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
   return `<div class="hubcard"><button class="hub-btn" id="hubBtn"><strong>${h.name}</strong><span class="num">${tot} visits/day</span></button><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div></div>`}
 function renderList(){
   list.innerHTML=hubCard()+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
-    return `<div class="fam"><span>${lab}</span><span>${t} trips</span></div>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')}).join('');
+    const open=!collapsed.has(lab);
+    return `<button class="fam" data-f="${lab}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${lab}</span><span>${t} trips</span></button><div class="fam-body"${open?'':' hidden'}>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')+'</div>'}).join('');
+  list.querySelectorAll('.fam').forEach(b=>b.onclick=()=>{const f=b.dataset.f;collapsed.has(f)?collapsed.delete(f):collapsed.add(f);saveCollapsed();renderList()});
   list.querySelectorAll('.grp').forEach(b=>b.onclick=()=>setFocus(b.dataset.g));
   const chips=[...list.querySelectorAll('.chip')];
   chips.forEach(c=>{const r=c.dataset.r;
@@ -151,7 +158,9 @@ function renderList(){
     c.onclick=()=>pinRoute(r);});
   if(HUB)document.getElementById('hubBtn').onclick=()=>{setFocus(null);map.flyTo([HUB.lat,HUB.lon],14)};
 }
-function setFocus(g){focus=(focus===g)?null:g;renderList();draw();
+function setFocus(g){focus=(focus===g)?null:g;
+  if(focus&&collapsed.delete(famLabel(focus)))saveCollapsed();
+  renderList();draw();
   if(focus)groupBounds(focus);else goHome();}
 function goHome(){map.flyToBounds(ZB,{padding:[16,16]})}
 function groupBounds(g){const b=L.geoJSON(routes,{filter:f=>f.properties.group===g}).getBounds();if(b.isValid())map.flyToBounds(b,{padding:[30,30],maxZoom:14})}
