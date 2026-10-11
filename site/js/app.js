@@ -149,10 +149,13 @@ const list=document.getElementById('list');
 const COLLAPSED_KEY='busrads.collapsed';
 const collapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(COLLAPSED_KEY))||[]}catch(e){return []}})());
 function saveCollapsed(){try{localStorage.setItem(COLLAPSED_KEY,JSON.stringify([...collapsed]))}catch(e){}}
+// The hub card starts collapsed; opening it is remembered per browser.
+const HUB_KEY='busrads.hubOpen';
+let hubOpen=(()=>{try{return localStorage.getItem(HUB_KEY)==='1'}catch(e){return false}})();
 const canHover=window.matchMedia('(hover: hover)').matches;
 const famLabel=g=>(fams.find(f=>f[0]===FAM[g])||[])[1];
 function hubCard(){if(!HUB)return '';const h=HUB;const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
-  return `<div class="hubcard"><button class="hub-btn" id="hubBtn"><strong>${h.name}</strong><span class="num">${tot} visits/day</span></button><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div></div>`}
+  return `<div class="hubcard"><button class="hub-btn" id="hubBtn" aria-expanded="${hubOpen}"><span class="hub-title"><i class="chev" aria-hidden="true"></i><strong>${h.name}</strong></span><span class="num">${tot} visits/day</span></button><div class="hub-body"${hubOpen?'':' hidden'}><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div><button class="hub-go" id="hubGo">Show on map</button></div></div>`}
 function renderList(){
   list.innerHTML=hubCard()+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
     const open=!collapsed.has(lab);
@@ -169,7 +172,10 @@ function renderList(){
     c.onmouseenter=()=>{hover=r;applyHL()};
     c.onmouseleave=()=>{hover=null;applyHL()};
     c.onclick=()=>pinRoute(r);});
-  if(HUB)document.getElementById('hubBtn').onclick=()=>{setFocus(null);map.flyTo([HUB.lat,HUB.lon],14)};
+  if(HUB){
+    document.getElementById('hubBtn').onclick=()=>{hubOpen=!hubOpen;try{localStorage.setItem(HUB_KEY,hubOpen?'1':'0')}catch(e){}renderList()};
+    document.getElementById('hubGo').onclick=()=>{setFocus(null);map.flyTo([HUB.lat,HUB.lon],14)};
+  }
 }
 function setFocus(g){focus=(focus===g)?null:g;
   if(focus&&collapsed.delete(famLabel(focus)))saveCollapsed();
