@@ -1,12 +1,14 @@
-# Bus RADS: project handoff
+# Bus RADS
 
 **Bus RADS** stands for **R**outes **A**nd **D**epot **S**ervice zones. Use "Bus RADS" as the site title and header, with the subtitle "Brisbane bus routes and depot service zones". The repo and site slug is `bus-rads`. Keep "BCC" and "Translink" out of the name so it reads as an unofficial drivers' tool; they can appear in the subtitle or footer.
 
-The UI says **service zones** rather than "territories" (the prototype still says "territories" in places, so rename those).
+The UI says **service zones** rather than "territories" (only the prototype's file names still say "territories").
 
 An interactive map showing how Brisbane City Council bus route numbers divide the city into areas. Routes are grouped by their first two digits (38x = The Gap, 43x = Kenmore South, 44x = Moggill and so on). The map shows each group's service zone, the routes themselves, their stops, and hubs such as UQ.
 
 The prototype was built in a Claude chat session as a single self-contained HTML artifact. This repo moves it to GitHub with a normally hosted site.
+
+- **Live site:** https://mark-j-pickering.github.io/bus-rads/ (public repo, GitHub Pages deployed by Actions)
 
 - **Owner:** Mark (maintainer). His main stack is .NET 8 / WinForms. This project is Python for the data build and plain JS with Leaflet for the site.
 - **Live prototype (Toowong only):** https://claude.ai/artifact/5V2HtJj3XMahimLLvPqcDK
@@ -20,6 +22,28 @@ The prototype was built in a Claude chat session as a single self-contained HTML
 4. **Automatic refresh.** A scheduled GitHub Action should download the GTFS feed, rebuild the data and redeploy. The current feed runs 10 Oct to 9 Dec 2026.
 
 Mark decided: **don't worry about shared routes.** Some routes are worked by more than one depot (Sherwood runs some of Toowong's). A route simply belongs to every depot list it appears in, and "All" shows it once.
+
+## Progress
+
+Working through the goals one step at a time, Toowong end-to-end first:
+
+1. Done: Python build (`busrads/`, `python -m busrads build`) replacing `prototype/scripts/build.py`. Output matches the prototype for Toowong.
+2. Done: static site (`site/`) for Toowong, still on the drawn basemap (`base.json`, built by `busrads/basemap.py`) by Mark's choice.
+3. Done: `.github/workflows/deploy.yml` deploys to Pages on every push to `main` or by hand. Builds only the depots in its `DEPOTS` env var (currently `toowong`).
+4. Next: Carina. Add `depots/carina.json` (areas, hubs, families). Two-digit routes 29 and 61 currently come out as groups "29x" and "61x" and need a rule.
+5. Depot selector and "All", pre-built per selection (see design below).
+6. Weekly schedule on the workflow, redeploying only when the feed changed.
+7. Docs.
+
+Real tiles (goal 2) are deferred. Findings so far: CARTO raster tiles now need a free API key per site (5M requests/month free for non-commercial use; keys are requested by email at carto.com/basemaps/apikey). OpenFreeMap needs no key and has Positron and Dark styles, but is vector-only, so it needs MapLibre GL plus `@maplibre/maplibre-gl-leaflet`.
+
+## Build notes
+
+- The operator's `route_id` suffix (`-5146` in the current feed) is detected per build as the operator covering most depot route numbers; the build fails if any listed route is missing.
+- The service day is the busiest Tue–Thu in the first three weeks of the feed, preferring Wednesday (Wed 14 Oct for the current feed).
+- Corridor bands buffer each path and then union, which is ~70x faster than buffering the unioned lines.
+- Per-depot config lives in `depots/<id>.json`: `hubs` (name, short name, stop-name regex, optional fixed position), `anchors` (spoke start overrides), `families`, `areas`, `places`. The page reads all of these from `meta.json`.
+- Commits use Mark's GitHub noreply address; keep personal details out of the repo.
 
 ## Data source
 
@@ -37,7 +61,7 @@ Mark decided: **don't worry about shared routes.** Some routes are worked by mor
 
 ## How the prototype pipeline works (`prototype/scripts/`)
 
-The prototype runs as three steps. Paths are hard-coded to the chat sandbox, so expect to restructure.
+The prototype ran as three steps; `busrads/` now replaces all three, but this describes the method it still follows.
 
 1. **`build.py GTFS_DIR OUT_DIR ROUTE_LIST`**
    - Filters routes to the depot list.
@@ -98,8 +122,7 @@ Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, nump
 
 ## Open items
 
-- Pick a tile provider and check its attribution and usage terms.
+- Pick a tile provider: CARTO (needs a key) or OpenFreeMap (needs MapLibre GL). See Progress.
 - Decide whether to add the school feed as a separate layer.
 - Write Carina group descriptions and decide its hubs.
 - Optionally draw the event precinct overlays (Suncorp, Gabba).
-- Confirm the GitHub Action can reach the Translink URL. The chat sandbox couldn't, but GitHub runners should be able to.
