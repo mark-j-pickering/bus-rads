@@ -1,16 +1,20 @@
 # Bus RADS
 
-**Routes And Depot Service zones.** An interactive map of Brisbane City Council bus routes, grouped by route-number prefix (38x, 43x, 44x and so on) and showing each group's service zone, with a selector for individual depots or all of them.
+**Routes And Depot Service zones.** An interactive map of Brisbane City Council bus routes, grouped by route-number prefix (38x, 43x, 44x and so on) and showing each group's service zone.
+
+**Live site:** https://mark-j-pickering.github.io/bus-rads/
 
 This is an unofficial tool, not affiliated with Brisbane City Council or Translink. It is built from Translink's open GTFS feed.
 
 ## Status
 
-This is a handoff from a prototype. `CLAUDE.md` has the full context, decisions and next steps.
+Toowong depot is live. Carina and a depot selector (Toowong, Carina, All) are next, then real map tiles and a weekly automatic refresh. `CLAUDE.md` has the full context, decisions and plan.
 
-- `depots/`: route lists for each depot (Toowong, Carina)
-- `prototype/scripts/`: the working prototype pipeline (Python) and page template (Leaflet)
-- `prototype/reference/route-territories.html`: the built Toowong prototype, self-contained, so open it in a browser
+- `busrads/`: the Python data build
+- `depots/`: route lists (`<depot>.txt`) and display config (`<depot>.json`) for each depot
+- `site/`: the static site (`index.html`, `css/`, `js/`); the build writes `site/data/`
+- `.github/workflows/deploy.yml`: downloads the feed, builds and deploys to GitHub Pages
+- `prototype/`: the original single-page prototype, kept for reference
 
 ## Building the data
 
@@ -24,13 +28,15 @@ python -m venv .venv
 .venv\Scripts\python -m pytest tests
 ```
 
-Output goes to `site/data/<depot>/` (gitignored), plus a shared `site/data/base.json` for the drawn basemap.
+Output goes to `site/data/<depot>/` (gitignored), plus a shared `site/data/base.json` for the drawn basemap. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
 
-To view the site locally, serve `site/` and open http://127.0.0.1:8765/ (opening `index.html` as a file won't work, as the page fetches its data):
+## Viewing it locally
 
-```
-.venv\Scripts\python -m http.server 8765 --directory site
-``` The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
+Double-click `serve.bat`. It builds the data if there is none yet, serves `site/` and opens http://127.0.0.1:8765/. Opening `index.html` directly as a file won't work, as the page fetches its data.
+
+## Deploying
+
+Every push to `main` runs the workflow, which downloads the latest feed, runs the tests, builds the data and publishes to GitHub Pages. It can also be run by hand from the Actions tab.
 
 ## Data
 
