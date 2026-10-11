@@ -166,7 +166,17 @@ function renderList(){
   if(canHover)list.querySelectorAll('.fam:not(.hubfam)').forEach(b=>{
     b.onmouseenter=()=>{hoverFam=b.dataset.k;restyle()};
     b.onmouseleave=()=>{hoverFam=null;restyle()};});
-  list.querySelectorAll('.fam:not(.hubfam)').forEach(b=>b.onclick=()=>{const f=b.dataset.f;collapsed.has(f)?collapsed.delete(f):collapsed.add(f);saveCollapsed();renderList()});
+  list.querySelectorAll('.fam:not(.hubfam)').forEach(b=>b.onclick=()=>{const f=b.dataset.f,k=b.dataset.k;
+    if(collapsed.has(f)){collapsed.delete(f);saveCollapsed();renderList();return}
+    collapsed.add(f);saveCollapsed();
+    // Collapsing a family clears a focused group or pinned route inside it, as if its row or chip were
+    // clicked again, so the map never stays highlighted by a control that's folded away.
+    const focusIn=focus&&FAM[focus]===k, pinIn=pinned&&FAM[RG[pinned]]===k;
+    if(!focusIn&&!pinIn){renderList();return}
+    if(focusIn)focus=null;
+    if(pinIn){pinned=null;hover=null;map.closePopup()}
+    renderList();draw();
+    focus?groupBounds(focus):goHome()});
   list.querySelectorAll('.grp').forEach(b=>b.onclick=()=>setFocus(b.dataset.g));
   const chips=[...list.querySelectorAll('.chip')];
   chips.forEach(c=>{const r=c.dataset.r;
