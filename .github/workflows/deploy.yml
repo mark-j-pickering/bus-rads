@@ -52,6 +52,15 @@ jobs:
       - name: Build site data
         run: python -m busrads build --gtfs "$GTFS_DIR" ${DEPOTS:+--depot $DEPOTS}
 
+      - name: Version the page's assets
+        # Pages lets browsers cache files for 10 minutes; stamping the script and stylesheet
+        # URLs with the commit makes a new deploy load its own JS and CSS, not cached ones.
+        # (Data files are versioned by the build id in index.json.)
+        run: |
+          V=${GITHUB_SHA::8}
+          sed -i "s#css/app.css#css/app.css?v=$V#; s#js/app.js#js/app.js?v=$V#" site/index.html
+          grep -n "?v=" site/index.html
+
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5

@@ -22,4 +22,4 @@ if not exist "site\data\index.json" (
 
 echo Serving http://127.0.0.1:%PORT%/  -  close this window to stop.
 start "" "http://127.0.0.1:%PORT%/"
-"%PY%" -m http.server %PORT% --bind 127.0.0.1 --directory site
+"%PY%" tools\serve.py %PORT%

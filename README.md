@@ -32,7 +32,7 @@ Output goes to `site/data/<depot>/` (gitignored), plus `site/data/all/` (every r
 
 ## Viewing it locally
 
-Double-click `serve.bat`. It builds the data if there is none yet, serves `site/` and opens http://127.0.0.1:8765/. Opening `index.html` directly as a file won't work, as the page fetches its data.
+Double-click `serve.bat`. It builds the data if there is none yet, serves `site/` with browser caching turned off (`tools/serve.py`) and opens http://127.0.0.1:8765/. Opening `index.html` directly as a file won't work, as the page fetches its data.
 
 ## Deploying
 

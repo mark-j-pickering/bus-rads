@@ -70,7 +70,11 @@ def build(gtfs_dir, out_dir, depots_dir, ids, day=None):
         log(f"{d.id}: {len(res['groups'])} groups, {res['trips']} trips -> {dest}")
         built.append(dict(id=d.id, name=d.name))
 
-    export.write_json(dict(feed=feed.label, day=str(day), depots=built), Path(out_dir) / "index.json")
+    # "build" versions every data file: the page appends it to each request, so a browser
+    # never mixes cached files from an older build with new ones.
+    build_id = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+    export.write_json(dict(feed=feed.label, day=str(day), build=build_id, depots=built),
+                      Path(out_dir) / "index.json")
     w, s, e, n = (min(b[0] for b in bounds), min(b[1] for b in bounds),
                   max(b[2] for b in bounds), max(b[3] for b in bounds))
     pad = 0.03  # about 3 km of context around the zones

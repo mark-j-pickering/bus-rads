@@ -2,8 +2,14 @@
 const get=p=>fetch(p).then(r=>{if(!r.ok)throw new Error(`${p}: HTTP ${r.status}`);return r.json()});
 const list=document.getElementById('list');
 const fail=err=>{list.innerHTML=`<p class="error">Couldn't load the map data (${err.message}).</p>`};
-let base,index;
-try{[base,index]=await Promise.all([get('data/base.json'),get('data/index.json')])}catch(err){fail(err);return}
+// index.json is always revalidated; its build id then versions every other data request, so a
+// browser never mixes cached files from an older build with new ones.
+let base,index,V='';
+try{
+  index=await fetch('data/index.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(`data/index.json: HTTP ${r.status}`);return r.json()});
+  V=index.build?`?v=${index.build}`:'';
+  base=await get('data/base.json'+V);
+}catch(err){fail(err);return}
 const DEPOTS=index.depots;
 
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -31,7 +37,7 @@ const cache={};
 function fetchDepot(id){
   const D=`data/${id}/`;
   return cache[id]||(cache[id]=Promise.all(['zones.geojson','cells.geojson','routebuf.geojson','groupbuf.geojson',
-    'routes.geojson','stops.geojson','meta.json'].map(f=>get(D+f))).catch(err=>{delete cache[id];throw err}));
+    'routes.geojson','stops.geojson','meta.json'].map(f=>get(D+f+V))).catch(err=>{delete cache[id];throw err}));
 }
 // The depot comes from the URL hash (#carina, #all), so a view can be shared; Toowong by default.
 function depotFromURL(){
