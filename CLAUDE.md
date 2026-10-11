@@ -38,7 +38,7 @@ Working through the goals one step at a time, Toowong end-to-end first:
 6. Next: weekly schedule on the workflow, redeploying only when the feed changed.
 7. Docs.
 
-Real tiles (goal 2) are deferred. Findings so far: CARTO raster tiles now need a free API key per site (5M requests/month free for non-commercial use; keys are requested by email at carto.com/basemaps/apikey). OpenFreeMap needs no key and has Positron and Dark styles, but is vector-only, so it needs MapLibre GL plus `@maplibre/maplibre-gl-leaflet`.
+Real tiles (goal 2): done after step 5. Default basemap is **OpenFreeMap Liberty** (Mark chose it because its colours look like a Refidex), OpenFreeMap Dark in dark mode, rendered with MapLibre GL 5.24.0 via `@maplibre/maplibre-gl-leaflet` 0.1.4. The style is split in the page: non-label layers in Leaflet's tile pane under the zones, label layers in a `maplabels` pane above them, so suburb and street names stay readable; the "Labels" toggle controls that pane. Hand-placed `places` labels and the drawn basemap (`base.json`) are now only the fallback for devices without WebGL. `?basemap=<id>` (drawn, openfreemap = Positron, liberty, carto, stadia, esri) previews alternatives with a picker. Earlier findings: Findings so far: CARTO raster tiles now need a free API key per site (5M requests/month free for non-commercial use; keys are requested by email at carto.com/basemaps/apikey). OpenFreeMap needs no key and has Positron and Dark styles, but is vector-only, so it needs MapLibre GL plus `@maplibre/maplibre-gl-leaflet`.
 
 ## Build notes
 
@@ -125,7 +125,6 @@ Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, nump
 
 ## Open items
 
-- Pick a tile provider: CARTO (needs a key) or OpenFreeMap (needs MapLibre GL). See Progress.
 - Decide whether to add the school feed as a separate layer.
 - Mark to check Carina's draft area descriptions and suburb labels (`depots/carina.json`).
 - Optionally draw the event precinct overlays (Suncorp, Gabba).
