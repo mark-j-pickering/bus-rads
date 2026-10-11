@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bus RADS · Help</title>
+<meta name="description" content="How to read and use Bus RADS, an unofficial map of Brisbane bus route-number groups and their service zones.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/help.css">
+</head>
+<body class="help">
+<header class="topbar">
+  <a class="back" id="back" href="./"><span aria-hidden="true">←</span> Back to the map</a>
+  <span class="eyebrow">Help</span>
+</header>
+
+<main class="doc">
+  <section class="hero">
+    <div class="eyebrow">Bus RADS · Routes And Depot Service zones</div>
+    <h1>How to read the map</h1>
+    <p class="lede">Brisbane's bus route numbers aren't random. Routes are grouped by their first two digits, and each group mostly serves one part of the city: <b>38x</b> is The Gap, <b>44x</b> is Moggill, <b>22x</b> is Wynnum. Bus RADS shows the area each group serves, the routes themselves and every stop they use, one depot at a time or across the whole city.</p>
+    <nav class="toc" aria-label="On this page">
+      <a href="#h-quick">Quick start</a><a href="#h-panel">The panel</a><a href="#h-map">The map</a>
+      <a href="#h-phone">On a phone</a><a href="#h-how">How zones are worked out</a><a href="#h-colours">Colours</a>
+      <a href="#h-limits">What it doesn't show</a><a href="#h-data">Data &amp; credits</a>
+    </nav>
+  </section>
+
+  <section id="h-quick">
+    <h2>Quick start</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div><b>Pick a view.</b> Choose <span class="kbd">Toowong</span>, <span class="kbd">Carina</span> or <span class="kbd">All</span> at the top of the panel. All shows every Brisbane City Council bus route.</div></li>
+      <li><span class="n">2</span><div><b>Click a group</b> in the list, such as <span class="pfx-s" style="--c:var(--g38x)">38x</span>, to zoom to it and fade the others. Click it again to zoom back out.</div></li>
+      <li><span class="n">3</span><div><b>Hover or click a route number</b> such as <span class="chip-s" style="--c:var(--g41x)">411</span> to see its path and only the stops it serves.</div></li>
+      <li><span class="n">4</span><div><b>Zoom in</b> and point at any stop to see which routes call there and how often.</div></li>
+    </ol>
+  </section>
+
+  <section id="h-panel">
+    <h2>The panel</h2>
+
+    <h3>Depot</h3>
+    <div class="mock"><div class="seg"><button aria-pressed="true">Toowong</button><button aria-pressed="false">Carina</button><button aria-pressed="false">All</button></div></div>
+    <p><b>Toowong</b> and <b>Carina</b> show the routes on each depot's list. <b>All</b> shows every Brisbane City Council bus route, about 220 of them in 40-odd groups. The choice is saved in the web address, so a link ending in <code>#carina</code> or <code>#all</code> opens straight to that view. The browser's Back button steps between views.</p>
+
+    <h3>View and toggles</h3>
+    <div class="mock"><div class="seg"><button aria-pressed="true">Zones</button><button aria-pressed="false">Routes</button><button aria-pressed="false">Both</button></div></div>
+    <dl class="defs">
+      <dt>Zones</dt><dd>Coloured areas: the part of the city each group serves.</dd>
+      <dt>Routes</dt><dd>Each route's main path, coloured by group.</dd>
+      <dt>Both</dt><dd>Zones, slightly faded, with the routes on top.</dd>
+      <dt>Hub spokes</dt><dd>Lines from each group to a hub such as UQ, thicker for more visits. Off to start with.</dd>
+      <dt>Shared corridors</dt><dd>Grey areas where no single group dominates, and the lightly shaded city centre.</dd>
+      <dt>Suburbs</dt><dd>Suburb names, shown once you're zoomed in a little.</dd>
+    </dl>
+
+    <h3>Hubs</h3>
+    <div class="mock list-mock">
+      <div class="fam-s"><span><i class="chev-s"></i>UQ Chancellors Place</span><span>603 visits</span></div>
+      <div class="bars-s">
+        <div><span>41x</span><i style="width:100%;background:var(--g41x)"></i><span>333</span></div>
+        <div><span>42x</span><i style="width:38%;background:var(--g42x)"></i><span>126</span></div>
+        <div><span>40x</span><i style="width:29%;background:var(--g40x)"></i><span>96</span></div>
+      </div>
+    </div>
+    <p>A hub is a place where many groups meet outside the city centre, such as UQ for Toowong, or Woolloongabba and Carindale for Carina. Click a hub to open it and see how many times each group stops there on a weekday, plus a <b>Show on map</b> button. Pointing at a hub's heading highlights the groups that serve it and draws their spokes.</p>
+
+    <h3>Families and groups</h3>
+    <div class="mock list-mock">
+      <div class="fam-s"><span><i class="chev-s open"></i>300s · north-west</span><span>906 trips</span></div>
+      <div class="grp-s"><i style="background:var(--g38x)"></i><b>38x</b><span>The Gap</span><em>291<small>trips</small></em></div>
+      <div class="chips-s"><span class="chip-s" style="--c:var(--g38x)">380</span><span class="chip-s" style="--c:var(--g38x)">381</span><span class="chip-s" style="--c:var(--g38x)">382</span><span class="chip-s" style="--c:var(--g38x)">385</span><span class="chip-s" style="--c:var(--g38x)">N385</span></div>
+    </div>
+    <ul class="bullets">
+      <li><b>Families</b> group the hundreds together (300s, 400s…). Click a family's heading to fold it away; the site remembers what you folded. Point at a heading to preview that whole family on the map.</li>
+      <li><b>Groups</b> show the prefix, the area it serves and its weekday trip total. <b>Click a group</b> to zoom to it: its full corridor is shaded (main paths stronger than variants) and the other groups fade. Click again, or fold its family, to zoom back out. Clicking a coloured zone on the map does the same.</li>
+      <li><b>Route numbers</b>: point at one to preview it, or click to pin it and zoom in. Click again to unpin.</li>
+    </ul>
+  </section>
+
+  <section id="h-map">
+    <h2>The map</h2>
+    <h3>A highlighted route</h3>
+    <div class="legend-grid">
+      <div class="lg"><svg viewBox="0 0 120 40" aria-hidden="true"><rect x="2" y="8" width="116" height="24" rx="12" fill="var(--g41x)" opacity=".35"/><line x1="12" y1="20" x2="108" y2="20" stroke="var(--g41x)" stroke-width="5" stroke-linecap="round"/></svg><span><b>Main path</b> inside a 250 m band: where most of the route's trips go.</span></div>
+      <div class="lg"><svg viewBox="0 0 120 40" aria-hidden="true"><line x1="12" y1="20" x2="108" y2="20" stroke="var(--g41x)" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round"/></svg><span><b>Dashed variant</b>: a path used by only some trips, such as a school or depot run.</span></div>
+      <div class="lg"><svg viewBox="0 0 120 40" aria-hidden="true"><line x1="10" y1="20" x2="110" y2="20" stroke="var(--g41x)" stroke-width="2" opacity=".4"/><circle cx="30" cy="20" r="5" fill="var(--g41x)" stroke="var(--panel)" stroke-width="2"/><circle cx="60" cy="20" r="5" fill="var(--g41x)" stroke="var(--panel)" stroke-width="2"/><circle cx="90" cy="20" r="5" fill="var(--g41x)" stroke="var(--panel)" stroke-width="2"/></svg><span><b>Its stops only</b>: every other stop is hidden while a route is highlighted.</span></div>
+    </div>
+
+    <h3>Pointing at things</h3>
+    <div class="cards">
+      <div class="card"><div class="tip"><b class="tb">38x</b>The Gap</div><p>A <b>zone</b> shows its group and area.</p></div>
+      <div class="card"><div class="tip"><b class="tb">Shared</b>44x 57% · 43x 43%<div class="tm">Routes 430 445 446</div></div><p>A <b>shared area</b> shows how its trips split between groups.</p></div>
+      <div class="card"><div class="tip"><div class="sn">Coronation Dr at Wesley Hospital, stop 9</div><div class="tchips"><span class="tchip" style="--c:var(--g41x)">411<small>39</small></span><span class="tchip" style="--c:var(--g41x)">412<small>111</small></span><span class="tchip" style="--c:var(--g42x)">425<small>27</small></span><span class="tchip" style="--c:var(--g43x)">430<small>13</small></span><span class="tchip" style="--c:var(--g44x)">444<small>75</small></span><span class="more">+5</span></div><div class="tm">Other routes: 453 454 460</div><div class="tm">Serviced 346 times each weekday by these routes</div></div><p>A <b>stop</b> (zoom in to see them) shows each route with its weekday trip count, plus other routes that stop there.</p></div>
+    </div>
+  </section>
+
+  <section id="h-phone">
+    <h2>On a phone</h2>
+    <ul class="bullets">
+      <li>The panel becomes a sheet along the bottom. Tap the little handle at its top to shrink it and see more map.</li>
+      <li>There's no hovering on a touch screen, so <b>tap a stop</b>. Its pop-up lists the routes as buttons; tap one to highlight that route.</li>
+      <li>Tapping a family or hub heading folds or opens it.</li>
+      <li>The site follows your phone's light or dark setting.</li>
+    </ul>
+  </section>
+
+  <section id="h-how">
+    <h2>How zones are worked out</h2>
+    <p>Everything is calculated from Translink's timetable for one typical weekday, shown at the bottom of the panel.</p>
+    <ol class="method">
+      <li><b>Groups.</b> A route belongs to the group of its first two digits: 380, 381 and N385 are all <b>38x</b>. Routes numbered under 100 (29, 61, 77…) are each a group of their own.</li>
+      <li><b>Who owns a stop.</b> For every stop, count the weekday trips from each group. If one group runs <b>60% or more</b> of them, the stop is that group's. Otherwise it's <b>shared</b> and shown grey.</li>
+      <li><b>City and hubs left out.</b> Stops within 1.7 km of the Queen Street Mall, and hub stops such as UQ, are left out of the zones. Every group passes through them, so they'd only blur where the routes really start.</li>
+      <li><b>From stops to areas.</b> Each stop gets the area that's closer to it than to any other stop, but no more than <b>400 m</b> away, about a five-minute walk. A group's zone is all of its stops' areas joined up.</li>
+      <li><b>Main paths and variants.</b> A path used by at least 15% of a route's trips in one direction is a main path; anything less is a variant.</li>
+    </ol>
+    <p class="note">Which group owns a stop depends on which routes are counted, so a stop shared in the All view can belong to one group in a depot view, and the other way round.</p>
+  </section>
+
+  <section id="h-colours">
+    <h2>Colours</h2>
+    <p>In <b>Toowong</b> and <b>Carina</b>, each group has its own hand-picked colour, chosen so neighbouring zones are easy to tell apart:</p>
+    <div class="swatches">
+      <span style="--c:var(--g34x)">34x</span><span style="--c:var(--g36x)">36x</span><span style="--c:var(--g37x)">37x</span><span style="--c:var(--g38x)">38x</span><span style="--c:var(--g39x)">39x</span><span style="--c:var(--g41x)">41x</span><span style="--c:var(--g42x)">42x</span><span style="--c:var(--g43x)">43x</span><span style="--c:var(--g20x)">20x</span><span style="--c:var(--g21x)">21x</span><span style="--c:var(--g22x)">22x</span>
+    </div>
+    <p>In <b>All</b>, with over 40 groups, each hundred gets its own family of colours instead, so you can see at a glance which part of the city a route belongs to:</p>
+    <div class="swatches families">
+      <span style="--c:#e09352">1xx south</span><span style="--c:#47c267">2xx east</span><span style="--c:#5c9ad6">3xx north</span><span style="--c:#ae2947">4xx west</span><span style="--c:#61307e">5xx cross-town</span><span style="--c:#5e7278">under 100</span>
+    </div>
+    <p class="note">So the same group can look different in a depot view and in All.</p>
+  </section>
+
+  <section id="h-limits">
+    <h2>What it doesn't show</h2>
+    <ul class="bullets">
+      <li><b>School (7xx) and special (9xx) runs.</b> They aren't in Translink's main timetable feed. Note that the 7xx numbers in the feed are Gold Coast routes.</li>
+      <li><b>Weekends and nights.</b> Trip counts are for one weekday. NightLink routes (N…) appear in their group but mostly don't run on a weekday.</li>
+      <li><b>Which depot runs each trip.</b> The timetable doesn't say. Depot views come from each depot's route list, and a route worked by two depots appears in both.</li>
+      <li><b>The road map is a sketch.</b> Roads, rail and the river are traced from the bus, train and ferry paths in the timetable, not from a street map.</li>
+    </ul>
+  </section>
+
+  <section id="h-data">
+    <h2>Data &amp; credits</h2>
+    <p>Built from the <b>Translink SEQ GTFS</b> timetable feed, licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Map drawn with <a href="https://leafletjs.com/">Leaflet</a>. The map is rebuilt whenever the site is updated, from the latest feed at the time.</p>
+    <p class="note">Bus RADS is an unofficial drivers' tool. It isn't affiliated with Brisbane City Council or Translink. For journey planning, use <a href="https://jp.translink.com.au/">Translink's journey planner</a>.</p>
+  </section>
+
+  <footer class="doc-foot"><a href="./" id="back2"><span aria-hidden="true">←</span> Back to the map</a></footer>
+</main>
+<script>
+// Go back to the exact map view (depot, zoom) if we came from it; otherwise the link opens the map.
+for(const id of ['back','back2']){const a=document.getElementById(id);a.addEventListener('click',e=>{
+  try{if(document.referrer&&new URL(document.referrer).origin===location.origin&&history.length>1){e.preventDefault();history.back()}}catch(err){}})}
+</script>
+</body>
+</html>
