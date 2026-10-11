@@ -39,7 +39,9 @@ map.attributionControl.setPrefix(false).addAttribution('Data: Translink SEQ GTFS
 const R=L.canvas({padding:.3});
 let L_base,L_zone,L_shared,L_route,L_stops,L_spokes,L_labels,L_hub;
 let L_hl=null,L_fp=null,L_rs=null,pinned=null,hover=null;
-let focus=null,view='zones';
+let focus=null,view='zones',hoverFam=null;
+// A hovered legend family previews over the focused group; otherwise only the focused group stays bright.
+const dim=g=>hoverFam?FAM[g]!==hoverFam:(focus&&g!==focus);
 function draw(){
   [L_base,L_zone,L_shared,L_fp,L_route,L_stops,L_spokes,L_labels,L_hub,L_hl].forEach(l=>l&&map.removeLayer(l));L_hl=null;L_fp=null;
   L_base=L.layerGroup([
@@ -47,7 +49,6 @@ function draw(){
     L.geoJSON(base.roads,{renderer:R,interactive:false,style:{color:css('--road'),weight:1.1,opacity:.9}}),
     L.geoJSON(base.rail,{renderer:R,interactive:false,style:{color:css('--rail'),weight:1.6,opacity:.9,dashArray:'5 3'}})
   ]).addTo(map);
-  const dim=g=>focus&&g!==focus;
   const SH=f=>['shared','cbd'].includes(f.properties.cls);
   L_shared=L.layerGroup([
     L.geoJSON(cells,{renderer:R,interactive:false,filter:SH,style:f=>({stroke:false,fillColor:css(f.properties.cls==='cbd'?'--cbd':'--shared'),fillOpacity:f.properties.cls==='cbd'?.18:.34})}),
@@ -64,7 +65,7 @@ function draw(){
   if(view!=='routes') L_zone.addTo(map);
   if(view!=='zones') L_route.addTo(map);
   L_stops=L.geoJSON(stops,{renderer:R,pointToLayer:(f,ll)=>{const c=f.properties.cls;const k=FAM[c]?col(c):css(c==='hub'?'--hub':'--shared');
-      return L.circleMarker(ll,{radius:2.6,color:k,weight:1,fillColor:k,fillOpacity:.9,opacity:(FAM[c]&&dim(c))?.15:.9})},
+      return L.circleMarker(ll,{radius:2.6,color:k,weight:1,fillColor:k,fillOpacity:.9,opacity:(FAM[c]&&dim(c))?.15:.9,group:c})},
     onEachFeature:(f,l)=>l.bindPopup(()=>stopHTML(f.properties,true))});
   if(map.getZoom()>=14) L_stops.addTo(map);
   // hub + spokes
@@ -72,7 +73,7 @@ function draw(){
   if(HUB){
     const h=HUB;
     L_spokes=L.layerGroup(meta.groups.filter(g=>h.groups[g.group]).map(g=>{
-      const v=h.groups[g.group];return L.polyline([[g.cy,g.cx],[h.lat,h.lon]],{renderer:R,color:col(g.group),weight:2+Math.sqrt(v)*0.7,opacity:dim(g.group)?.12:.75,lineCap:'round'})
+      const v=h.groups[g.group];return L.polyline([[g.cy,g.cx],[h.lat,h.lon]],{renderer:R,color:col(g.group),weight:2+Math.sqrt(v)*0.7,opacity:dim(g.group)?.12:.75,lineCap:'round',group:g.group})
         .bindPopup(`<div class="pp"><h3>${g.group} → ${h.short}</h3>${v} weekday stop visits at ${h.name}</div>`)}));
     if(document.getElementById('tSpokes').checked) L_spokes.addTo(map);
     L_hub=L.circleMarker([h.lat,h.lon],{renderer:R,radius:9,color:css('--panel'),weight:3,fillColor:css('--fg'),fillOpacity:1})
@@ -111,6 +112,12 @@ map.on('click',e=>{if(map._popup&&map.hasLayer(map._popup))return;let h=null;try
 function syncStops(){if(!L_stops)return;const show=!(pinned||hover)&&map.getZoom()>=14;show?L_stops.addTo(map):map.removeLayer(L_stops)}
 function pinRoute(r){hover=null;pinned=(pinned===r)?null:r;document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.r===pinned));map.closePopup();applyHL();if(pinned)hlBounds(pinned);else if(focus)groupBounds(focus);else goHome()}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.pchip');if(b)pinRoute(b.dataset.r)},true);
+// Re-apply dimming to the existing layers without rebuilding them (cheap enough for hover).
+function restyle(){
+  L_spokes&&L_spokes.eachLayer(l=>l.setStyle({opacity:dim(l.options.group)?.12:.75}));
+  L_stops&&L_stops.eachLayer(l=>FAM[l.options.group]&&l.setStyle({opacity:dim(l.options.group)?.15:.9}));
+  applyHL();
+}
 function applyHL(){
   if(L_hl){map.removeLayer(L_hl);L_hl=null}
   if(L_rs){map.removeLayer(L_rs);L_rs=null}
@@ -138,11 +145,24 @@ map.on('zoomend',()=>{ syncStops();
   const on=document.getElementById('tLabels').checked&&map.getZoom()>=12; on?L_labels.addTo(map):map.removeLayer(L_labels)});
 // panel
 const list=document.getElementById('list');
+// Collapsed families are remembered per browser, keyed by family label so they carry across depots.
+const COLLAPSED_KEY='busrads.collapsed';
+const collapsed=new Set((()=>{try{return JSON.parse(localStorage.getItem(COLLAPSED_KEY))||[]}catch(e){return []}})());
+function saveCollapsed(){try{localStorage.setItem(COLLAPSED_KEY,JSON.stringify([...collapsed]))}catch(e){}}
+const canHover=window.matchMedia('(hover: hover)').matches;
+const famLabel=g=>(fams.find(f=>f[0]===FAM[g])||[])[1];
 function hubCard(){if(!HUB)return '';const h=HUB;const tot=Object.values(h.groups).reduce((a,b)=>a+b,0);const mx=Math.max(...Object.values(h.groups));
   return `<div class="hubcard"><button class="hub-btn" id="hubBtn"><strong>${h.name}</strong><span class="num">${tot} visits/day</span></button><div class="bars">${Object.entries(h.groups).sort((a,b)=>b[1]-a[1]).map(([g,v])=>`<div class="bar"><span>${g}</span><i style="width:${(v/mx*100).toFixed(0)}%;background:var(--g${g})"></i><span>${v}</span></div>`).join('')}</div></div>`}
 function renderList(){
   list.innerHTML=hubCard()+fams.map(([k,lab])=>{const items=meta.groups.filter(g=>FAM[g.group]===k);const t=items.reduce((a,g)=>a+g.trips,0);
-    return `<div class="fam"><span>${lab}</span><span>${t} trips</span></div>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')}).join('');
+    const open=!collapsed.has(lab);
+    return `<button class="fam" data-f="${lab}" data-k="${k}" aria-expanded="${open}"><span><i class="chev" aria-hidden="true"></i>${lab}</span><span>${t} trips</span></button><div class="fam-body"${open?'':' hidden'}>`+items.map(g=>`<div class="row${focus===g.group?' on':''}"><button class="grp" data-g="${g.group}" aria-pressed="${focus===g.group}"><i class="sw" style="background:var(--g${g.group})"></i><span class="pfx">${g.group}</span><span class="area">${AREA[g.group]||''}</span><span class="num"><b>${g.trips}</b>trips</span></button><div class="chips">${g.routes.map(r=>`<button class="chip" data-r="${r}" style="--c:var(--g${g.group})" aria-pressed="${pinned===r}" aria-label="Highlight route ${r}">${r}</button>`).join('')}</div></div>`).join('')+'</div>'}).join('');
+  // Hovering a family header previews it on the map. Pointer devices only: on touch, a tap
+  // would leave the preview stuck on, and tapping already collapses the family.
+  if(canHover)list.querySelectorAll('.fam').forEach(b=>{
+    b.onmouseenter=()=>{hoverFam=b.dataset.k;restyle()};
+    b.onmouseleave=()=>{hoverFam=null;restyle()};});
+  list.querySelectorAll('.fam').forEach(b=>b.onclick=()=>{const f=b.dataset.f;collapsed.has(f)?collapsed.delete(f):collapsed.add(f);saveCollapsed();renderList()});
   list.querySelectorAll('.grp').forEach(b=>b.onclick=()=>setFocus(b.dataset.g));
   const chips=[...list.querySelectorAll('.chip')];
   chips.forEach(c=>{const r=c.dataset.r;
@@ -151,7 +171,9 @@ function renderList(){
     c.onclick=()=>pinRoute(r);});
   if(HUB)document.getElementById('hubBtn').onclick=()=>{setFocus(null);map.flyTo([HUB.lat,HUB.lon],14)};
 }
-function setFocus(g){focus=(focus===g)?null:g;renderList();draw();
+function setFocus(g){focus=(focus===g)?null:g;
+  if(focus&&collapsed.delete(famLabel(focus)))saveCollapsed();
+  renderList();draw();
   if(focus)groupBounds(focus);else goHome();}
 function goHome(){map.flyToBounds(ZB,{padding:[16,16]})}
 function groupBounds(g){const b=L.geoJSON(routes,{filter:f=>f.properties.group===g}).getBounds();if(b.isValid())map.flyToBounds(b,{padding:[30,30],maxZoom:14})}
