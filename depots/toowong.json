@@ -3,6 +3,7 @@
  "hubs": [
   {
    "name": "UQ Chancellors Place",
+   "short": "UQ",
    "match": "university of queensland|uq lakes|chancellors place|uq ",
    "at": [-27.49813, 153.0111]
   }

@@ -24,7 +24,13 @@ python -m venv .venv
 .venv\Scripts\python -m pytest tests
 ```
 
-Output goes to `site/data/<depot>/` (gitignored). The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
+Output goes to `site/data/<depot>/` (gitignored), plus a shared `site/data/base.json` for the drawn basemap.
+
+To view the site locally, serve `site/` and open http://127.0.0.1:8765/ (opening `index.html` as a file won't work, as the page fetches its data):
+
+```
+.venv\Scripts\python -m http.server 8765 --directory site
+``` The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
 
 ## Data
 

@@ -5,7 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import analysis, depots, export
+from . import analysis, basemap, depots, export
 from .feed import BuildError, Feed, pick_service_day, select_routes
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,6 +61,8 @@ def build(gtfs_dir, out_dir, depots_dir, ids, day=None):
         built.append(dict(id=d.id, name=d.name))
 
     export.write_json(dict(feed=feed.label, day=str(day), depots=built), Path(out_dir) / "index.json")
+    basemap.build_basemap(feed, Path(out_dir) / "base.json")
+    log("basemap -> base.json")
 
 
 def main(argv=None):

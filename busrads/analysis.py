@@ -198,7 +198,7 @@ def hub_summary(gp, hub_cfg):
         else:
             c = d.to_crs(WGS84).geometry.union_all().centroid
             lat, lon = c.y, c.x
-        hubs.append(dict(name=h["name"], lat=round(lat, 5), lon=round(lon, 5),
+        hubs.append(dict(name=h["name"], short=h.get("short", h["name"]), lat=round(lat, 5), lon=round(lon, 5),
                          groups=dict(sorted(agg.items())),
                          routes=rsort(sum(d.routes, []))))
     return hubs
