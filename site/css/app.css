@@ -53,7 +53,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;margi
 .row{display:grid;gap:5px;padding:6px 0 9px}
 .row:hover,.row.on{background:var(--ground)}
 .grp{display:grid;grid-template-columns:14px 52px 1fr auto;gap:10px;align-items:center;padding:2px 16px;cursor:pointer;border:0;background:none;width:100%;text-align:left;color:inherit;font:inherit}
-.grp:focus-visible,.fam:focus-visible,.chip:focus-visible,.seg button:focus-visible,.hub-btn:focus-visible,.hub-go:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.grp:focus-visible,.fam:focus-visible,.chip:focus-visible,.seg button:focus-visible,.hub-go:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
 .sw{width:14px;height:14px;border-radius:3px}
 .pfx{font-family:var(--display);font-weight:700;font-size:22px;line-height:1}
 .desc{min-width:0;display:grid;gap:3px}
@@ -74,13 +74,8 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;margi
 .leaflet-tooltip-top.rtip::before{border-top-color:var(--panel)}
 .num{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .num b{display:block;color:var(--fg);font-weight:500;font-size:13px}
-.hubcard{margin:12px 16px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;display:grid;gap:8px}
-.hub-btn{all:unset;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.hub-btn strong{font-family:var(--display);font-size:19px;font-weight:700}
-.hub-title{display:flex;align-items:center;gap:8px;color:var(--fg)}
-.hub-btn .chev{color:var(--muted)}
-.hub-btn[aria-expanded="false"] .chev{transform:rotate(-45deg)}
-.hub-body{display:grid;gap:8px}
+.hubfam{padding-top:12px}
+.hub-body{display:grid;gap:8px;padding:2px 16px 8px 29px}
 .hub-body[hidden]{display:none}
 .hub-go{justify-self:start;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:500 12px var(--body);padding:4px 8px;border-radius:4px;cursor:pointer}
 .hub-go:hover{background:var(--ground)}
