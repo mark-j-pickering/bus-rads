@@ -27,6 +27,47 @@ const map=L.map(mapEl,{zoomControl:true,preferCanvas:true,attributionControl:tru
 new ResizeObserver(()=>map.invalidateSize()).observe(mapEl);
 map.attributionControl.setPrefix(false).addAttribution('Data: Translink SEQ GTFS (CC BY 4.0)');
 const R=L.canvas({padding:.3});
+
+// Basemap. The drawn one (traced from GTFS paths) is the default; ?basemap=<id> previews tile
+// basemaps, with light/dark variants following the theme. EXPERIMENTAL: for comparing options.
+const OSM='<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const OFM=`<a href="https://openfreemap.org">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/">OpenMapTiles</a> Data from ${OSM}`;
+const BASEMAPS={
+  drawn:{label:'Drawn (current)'},
+  openfreemap:{label:'OpenFreeMap Positron / Dark',gl:true,light:'https://tiles.openfreemap.org/styles/positron',dark:'https://tiles.openfreemap.org/styles/dark',attr:OFM},
+  liberty:{label:'OpenFreeMap Liberty',gl:true,light:'https://tiles.openfreemap.org/styles/liberty',dark:'https://tiles.openfreemap.org/styles/dark',attr:OFM},
+  carto:{label:'CARTO Positron / Dark Matter',light:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',subdomains:'abcd',attr:`© ${OSM} contributors © <a href="https://carto.com/attributions">CARTO</a>`},
+  stadia:{label:'Stadia Alidade Smooth',light:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',dark:'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',attr:`© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://openmaptiles.org/">OpenMapTiles</a> © ${OSM}`},
+  esri:{label:'Esri Light / Dark Gray',light:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',dark:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',maxNativeZoom:16,attr:`Tiles © Esri — Esri, HERE, Garmin, © ${OSM} contributors`},
+};
+const BM_PARAM=new URLSearchParams(location.search).get('basemap');
+const BM=BASEMAPS[BM_PARAM]?BM_PARAM:'drawn';
+let L_tiles=null,tilesKey=null,glReady=null;
+const loadScript=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.append(s)});
+function needGL(){
+  if(!glReady){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css';document.head.append(l);
+    glReady=loadScript('https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js')
+      .then(()=>loadScript('https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js'));
+  }
+  return glReady;
+}
+async function setTiles(){
+  const b=BASEMAPS[BM];if(!b.light)return;
+  const key=BM+(isDark()?':dark':':light');if(key===tilesKey)return;tilesKey=key;
+  if(L_tiles){map.removeLayer(L_tiles);L_tiles=null}
+  const url=isDark()?b.dark:b.light;
+  if(b.gl){await needGL();L_tiles=L.maplibreGL({style:url,attribution:b.attr})}
+  else L_tiles=L.tileLayer(url,{attribution:b.attr,subdomains:b.subdomains||'abc',maxZoom:20,maxNativeZoom:b.maxNativeZoom||20});
+  L_tiles.addTo(map);
+}
+// Preview picker, only shown when ?basemap= is in the address.
+if(BM_PARAM!==null){
+  const sel=document.createElement('select');sel.id='bmPick';sel.setAttribute('aria-label','Basemap preview');
+  sel.innerHTML=Object.entries(BASEMAPS).map(([k,b])=>`<option value="${k}"${k===BM?' selected':''}>${b.label}</option>`).join('');
+  sel.onchange=()=>{const u=new URL(location.href);u.searchParams.set('basemap',sel.value);location.href=u.href};
+  document.querySelector('.toggles').append(sel);
+}
 let L_base,L_zone,L_shared,L_route,L_stops,L_spokes,L_labels,L_hub,hubSpokes=[];
 let L_hl=null,L_fp=null,L_rs=null,pinned=null,hover=null;
 
@@ -74,7 +115,8 @@ let focus=null,view='zones',hoverFam=null;
 const dim=g=>hoverFam?(hoverFam.startsWith('hub:')?!HUBS[+hoverFam.slice(4)].groups[g]:FAM[g]!==hoverFam):(focus&&g!==focus);
 function draw(){
   [L_base,L_zone,L_shared,L_fp,L_route,L_stops,L_spokes,L_labels,L_hub,L_hl].forEach(l=>l&&map.removeLayer(l));L_hl=null;L_fp=null;
-  L_base=L.layerGroup([
+  setTiles();
+  L_base=BM!=='drawn'?null:L.layerGroup([
     L.geoJSON(base.river,{renderer:R,interactive:false,style:{color:css('--river'),weight:7,opacity:1}}),
     L.geoJSON(base.roads,{renderer:R,interactive:false,style:{color:css('--road'),weight:1.1,opacity:.9}}),
     L.geoJSON(base.rail,{renderer:R,interactive:false,style:{color:css('--rail'),weight:1.6,opacity:.9,dashArray:'5 3'}})
