@@ -1,0 +1,43 @@
+{
+ "name": "Carina",
+ "hubs": [
+  {
+   "name": "Woolloongabba station",
+   "short": "Woolloongabba",
+   "match": "^woolloongabba station"
+  },
+  {
+   "name": "Carindale Shopping Centre",
+   "short": "Carindale",
+   "match": "^carindale shopping centre"
+  }
+ ],
+ "anchors": {},
+ "families": [
+  {"label": "200s · east", "groups": ["20x", "21x", "22x", "23x"]},
+  {"label": "100s · south-east", "groups": ["17x", "18x"]},
+  {"label": "Inner-city & cross-city links", "groups": ["19x", "29", "61"]}
+ ],
+ "areas": {
+  "17x": "Carindale & Garden City – Griffith Uni, UQ",
+  "18x": "Garden City, Mansfield – City",
+  "19x": "City – South Brisbane loop",
+  "20x": "Carindale, Carindale Heights, Carina",
+  "21x": "Cannon Hill, Tingalpa, Seven Hills",
+  "22x": "Wynnum, Carindale, Cannon Hill",
+  "23x": "Balmoral, Bulimba, Hawthorne",
+  "29": "Woolloongabba – UQ Lakes shuttle",
+  "61": "Ashgrove – Coorparoo via City"
+ },
+ "places": [
+  ["Carina", -27.491, 153.091], ["Carindale", -27.503, 153.102], ["Carina Heights", -27.506, 153.090],
+  ["Cannon Hill", -27.472, 153.094], ["Tingalpa", -27.474, 153.127], ["Murarrie", -27.462, 153.101],
+  ["Morningside", -27.462, 153.073], ["Balmoral", -27.456, 153.068], ["Bulimba", -27.452, 153.058],
+  ["Hawthorne", -27.465, 153.060], ["Seven Hills", -27.481, 153.076], ["Camp Hill", -27.494, 153.075],
+  ["Coorparoo", -27.494, 153.058], ["Stones Corner", -27.498, 153.044], ["Woolloongabba", -27.489, 153.034],
+  ["East Brisbane", -27.484, 153.046], ["Greenslopes", -27.508, 153.050], ["Holland Park", -27.522, 153.068],
+  ["Mount Gravatt", -27.538, 153.080], ["Mansfield", -27.539, 153.100], ["Wishart", -27.554, 153.101],
+  ["Belmont", -27.501, 153.128], ["Wynnum", -27.442, 153.172], ["Manly", -27.455, 153.185],
+  ["Wakerley", -27.483, 153.161], ["City", -27.469, 153.024]
+ ]
+}
