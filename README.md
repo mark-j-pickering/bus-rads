@@ -8,7 +8,7 @@ This is an unofficial tool, not affiliated with Brisbane City Council or Transli
 
 ## Status
 
-Toowong depot is live. Carina and a depot selector (Toowong, Carina, All) are next, then real map tiles and a weekly automatic refresh. `CLAUDE.md` has the full context, decisions and plan.
+Toowong and Carina depots are live, plus an "All" view of every Brisbane City Council bus route, with a selector between them (link straight to one with `#toowong`, `#carina` or `#all`). A weekly automatic refresh and real map tiles are next. `CLAUDE.md` has the full context, decisions and plan.
 
 - `busrads/`: the Python data build
 - `depots/`: route lists (`<depot>.txt`) and display config (`<depot>.json`) for each depot
@@ -28,11 +28,11 @@ python -m venv .venv
 .venv\Scripts\python -m pytest tests
 ```
 
-Output goes to `site/data/<depot>/` (gitignored), plus a shared `site/data/base.json` for the drawn basemap. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
+Output goes to `site/data/<depot>/` (gitignored), plus `site/data/all/` (every route the operator runs), a shared `site/data/base.json` for the drawn basemap, and `site/data/index.json` listing what was built. To add a depot, drop `<id>.txt` (route list) and `<id>.json` (display config) into `depots/`. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
 
 ## Viewing it locally
 
-Double-click `serve.bat`. It builds the data if there is none yet, serves `site/` and opens http://127.0.0.1:8765/. Opening `index.html` directly as a file won't work, as the page fetches its data.
+Double-click `serve.bat`. It builds the data if there is none yet, serves `site/` with browser caching turned off (`tools/serve.py`) and opens http://127.0.0.1:8765/. Opening `index.html` directly as a file won't work, as the page fetches its data.
 
 ## Deploying
 
