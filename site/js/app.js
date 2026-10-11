@@ -4,11 +4,10 @@ const list=document.getElementById('list');
 const fail=err=>{list.innerHTML=`<p class="error">Couldn't load the map data (${err.message}).</p>`};
 // index.json is always revalidated; its build id then versions every other data request, so a
 // browser never mixes cached files from an older build with new ones.
-let base,index,V='';
+let base=null,index,V='';
 try{
   index=await fetch('data/index.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(`data/index.json: HTTP ${r.status}`);return r.json()});
   V=index.build?`?v=${index.build}`:'';
-  base=await get('data/base.json'+V);
 }catch(err){fail(err);return}
 const DEPOTS=index.depots;
 
@@ -27,6 +26,75 @@ const map=L.map(mapEl,{zoomControl:true,preferCanvas:true,attributionControl:tru
 new ResizeObserver(()=>map.invalidateSize()).observe(mapEl);
 map.attributionControl.setPrefix(false).addAttribution('Data: Translink SEQ GTFS (CC BY 4.0)');
 const R=L.canvas({padding:.3});
+
+// Basemap: OpenFreeMap Liberty, street-directory colours (Dark in dark mode), drawn with MapLibre GL. Its roads sit under the
+// zones and its labels in a pane above them, so suburb and street names stay readable everywhere.
+// The drawn basemap (traced from GTFS paths) is the fallback where WebGL isn't available.
+// ?basemap=<id> previews the other options, with a picker under the toggles.
+const OSM='<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const OFM=`<a href="https://openfreemap.org">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/">OpenMapTiles</a> Data from ${OSM}`;
+const BASEMAPS={
+  drawn:{label:'Drawn (fallback)'},
+  openfreemap:{label:'OpenFreeMap Positron / Dark',gl:true,light:'https://tiles.openfreemap.org/styles/positron',dark:'https://tiles.openfreemap.org/styles/dark',attr:OFM},
+  liberty:{label:'OpenFreeMap Liberty',gl:true,light:'https://tiles.openfreemap.org/styles/liberty',dark:'https://tiles.openfreemap.org/styles/dark',attr:OFM},
+  carto:{label:'CARTO Positron / Dark Matter',light:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',subdomains:'abcd',attr:`© ${OSM} contributors © <a href="https://carto.com/attributions">CARTO</a>`},
+  stadia:{label:'Stadia Alidade Smooth',light:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',dark:'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',attr:`© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://openmaptiles.org/">OpenMapTiles</a> © ${OSM}`},
+  esri:{label:'Esri Light / Dark Gray',light:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',dark:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',maxNativeZoom:16,attr:`Tiles © Esri — Esri, HERE, Garmin, © ${OSM} contributors`},
+};
+const BM_PARAM=new URLSearchParams(location.search).get('basemap');
+const hasWebGL=(()=>{try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'))}catch(e){return false}})();
+let BM=BASEMAPS[BM_PARAM]?BM_PARAM:'liberty';
+if(BASEMAPS[BM].gl&&!hasWebGL)BM='drawn';
+let L_tiles=null,L_tileLabels=null,tilesKey=null,tilesAttr=null,glReady=null;
+map.createPane('maplabels');Object.assign(map.getPane('maplabels').style,{zIndex:450,pointerEvents:'none'});
+const glStyles={};
+// Split a MapLibre style into everything but the labels (under the zones) and just the labels (above).
+function splitStyle(url){
+  return glStyles[url]||(glStyles[url]=fetch(url).then(r=>r.json()).then(st=>{
+    const sym=l=>l.type==='symbol';
+    return{base:{...st,layers:st.layers.filter(l=>!sym(l))},labels:{...st,layers:st.layers.filter(sym)}};
+  }));
+}
+function syncMapLabels(){
+  if(!L_tileLabels)return;
+  document.getElementById('tLabels').checked?L_tileLabels.addTo(map):map.removeLayer(L_tileLabels);
+}
+const loadScript=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.append(s)});
+function needGL(){
+  if(!glReady){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css';document.head.append(l);
+    glReady=loadScript('https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js')
+      .then(()=>loadScript('https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js'));
+  }
+  return glReady;
+}
+async function setTiles(){
+  const b=BASEMAPS[BM];if(!b.light)return;
+  const key=BM+(isDark()?':dark':':light');if(key===tilesKey)return;tilesKey=key;
+  const url=isDark()?b.dark:b.light;
+  let next,nextLabels=null;
+  if(b.gl){
+    const [st]=await Promise.all([splitStyle(url),needGL()]);
+    if(key!==tilesKey)return;   // the theme changed again while loading
+    // One explicit credit: the style's sources each carry the same one, which the bridge would repeat.
+    next=L.maplibreGL({style:st.base,attributionControl:{customAttribution:b.attr}});
+    nextLabels=L.maplibreGL({style:st.labels,pane:'maplabels',attributionControl:false});  // credited once, by the base layer
+  }else next=L.tileLayer(url,{subdomains:b.subdomains||'abc',maxZoom:20,maxNativeZoom:b.maxNativeZoom||20});
+  [L_tiles,L_tileLabels].forEach(l=>l&&map.removeLayer(l));
+  L_tiles=next.addTo(map);L_tileLabels=nextLabels;syncMapLabels();
+  // Vector styles credit their sources themselves; raster layers need it added.
+  const attr=b.gl?null:b.attr;
+  if(tilesAttr!==attr){if(tilesAttr)map.attributionControl.removeAttribution(tilesAttr);if(attr)map.attributionControl.addAttribution(attr);tilesAttr=attr}
+}
+if(BASEMAPS[BM].gl)needGL();       // start loading MapLibre alongside the route data
+if(BM==='drawn')base=await get('data/base.json'+V);
+// Preview picker, only shown when ?basemap= is in the address.
+if(BM_PARAM!==null){
+  const sel=document.createElement('select');sel.id='bmPick';sel.setAttribute('aria-label','Basemap preview');
+  sel.innerHTML=Object.entries(BASEMAPS).map(([k,b])=>`<option value="${k}"${k===BM?' selected':''}>${b.label}</option>`).join('');
+  sel.onchange=()=>{const u=new URL(location.href);u.searchParams.set('basemap',sel.value);location.href=u.href};
+  document.querySelector('.toggles').append(sel);
+}
 let L_base,L_zone,L_shared,L_route,L_stops,L_spokes,L_labels,L_hub,hubSpokes=[];
 let L_hl=null,L_fp=null,L_rs=null,pinned=null,hover=null;
 
@@ -74,7 +142,8 @@ let focus=null,view='zones',hoverFam=null;
 const dim=g=>hoverFam?(hoverFam.startsWith('hub:')?!HUBS[+hoverFam.slice(4)].groups[g]:FAM[g]!==hoverFam):(focus&&g!==focus);
 function draw(){
   [L_base,L_zone,L_shared,L_fp,L_route,L_stops,L_spokes,L_labels,L_hub,L_hl].forEach(l=>l&&map.removeLayer(l));L_hl=null;L_fp=null;
-  L_base=L.layerGroup([
+  setTiles();
+  L_base=BM!=='drawn'?null:L.layerGroup([
     L.geoJSON(base.river,{renderer:R,interactive:false,style:{color:css('--river'),weight:7,opacity:1}}),
     L.geoJSON(base.roads,{renderer:R,interactive:false,style:{color:css('--road'),weight:1.1,opacity:.9}}),
     L.geoJSON(base.rail,{renderer:R,interactive:false,style:{color:css('--rail'),weight:1.6,opacity:.9,dashArray:'5 3'}})
@@ -106,8 +175,10 @@ function draw(){
   if(HUBS.length&&document.getElementById('tSpokes').checked) L_spokes.addTo(map);
   L_hub=L.layerGroup(HUBS.map(h=>L.circleMarker([h.lat,h.lon],{renderer:R,radius:9,color:css('--panel'),weight:3,fillColor:css('--fg'),fillOpacity:1})
     .bindPopup(`<div class="pp"><h3>${h.name}</h3>Routes ${h.routes.join(', ')}<div class="m">${Object.values(h.groups).reduce((a,b)=>a+b,0)} weekday stop visits</div></div>`))).addTo(map);
-  L_labels=L.layerGroup(PLACES.map(([n,la,lo])=>L.marker([la,lo],{opacity:0,interactive:false,icon:L.divIcon({className:'',iconSize:[0,0]})}).bindTooltip(n,{permanent:true,direction:'center',className:'lbl-wrap',opacity:1}).on('add',function(){const t=this.getTooltip();t&&t.getElement()&&t.getElement().classList.add('lbl')})));
-  if(document.getElementById('tLabels').checked&&map.getZoom()>=12) L_labels.addTo(map);
+  // Hand-placed suburb labels, only with the drawn basemap; tile basemaps bring their own labels.
+  L_labels=BM!=='drawn'?null:L.layerGroup(PLACES.map(([n,la,lo])=>L.marker([la,lo],{opacity:0,interactive:false,icon:L.divIcon({className:'',iconSize:[0,0]})}).bindTooltip(n,{permanent:true,direction:'center',className:'lbl-wrap',opacity:1}).on('add',function(){const t=this.getTooltip();t&&t.getElement()&&t.getElement().classList.add('lbl')})));
+  if(L_labels&&document.getElementById('tLabels').checked&&map.getZoom()>=12) L_labels.addTo(map);
+  syncMapLabels();
   applyHL();
 }
 // Hover labels: our own hit test on each mouse move, independent of Leaflet's canvas hover state, which got stuck after redraws.
@@ -224,7 +295,7 @@ function setFocus(g){focus=(focus===g)?null:g;
 function goHome(){map.flyToBounds(ZB,{padding:[16,16]})}
 function groupBounds(g){const b=L.geoJSON(routes,{filter:f=>f.properties.group===g}).getBounds();if(b.isValid())map.flyToBounds(b,{padding:[30,30],maxZoom:14})}
 const dayText=new Date(index.day+'T00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
-document.getElementById('foot').textContent=`${index.feed}. Trip counts are for ${dayText}. School (7xx) and special (9xx) runs are not in this feed. Basemap drawn from Translink route paths. Unofficial; not affiliated with Brisbane City Council or Translink. `;
+document.getElementById('foot').textContent=`${index.feed}. Trip counts are for ${dayText}. School (7xx) and special (9xx) runs are not in this feed. ${BM==='drawn'?'Basemap drawn from Translink route paths.':'Map © OpenStreetMap contributors, via '+BASEMAPS[BM].label.split(' ')[0]+'.'} Unofficial; not affiliated with Brisbane City Council or Translink. `;
 {const a=document.createElement('a');a.href='help.html';a.textContent='How this map works';document.getElementById('foot').append(a)}
 const views={vZones:'zones',vRoutes:'routes',vBoth:'both'};
 Object.keys(views).forEach(id=>document.getElementById(id).onclick=()=>{view=views[id];Object.keys(views).forEach(k=>document.getElementById(k).setAttribute('aria-pressed',k===id));draw()});
