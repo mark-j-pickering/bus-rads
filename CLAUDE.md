@@ -29,11 +29,11 @@ Working through the goals one step at a time, Toowong end-to-end first:
 
 1. Done: Python build (`busrads/`, `python -m busrads build`) replacing `prototype/scripts/build.py`. Output matches the prototype for Toowong.
 2. Done: static site (`site/`) for Toowong, still on the drawn basemap (`base.json`, built by `busrads/basemap.py`) by Mark's choice.
-3. Done: `.github/workflows/deploy.yml` deploys to Pages on every push to `main` or by hand. Builds only the depots in its `DEPOTS` env var (currently `toowong carina`).
+3. Done: `.github/workflows/deploy.yml` deploys to Pages on every push to `main` or by hand. Builds every depot in `depots/` plus "All" (its `DEPOTS` env var can limit this).
    - Since then: legend families and hub sections are collapsible (hubs start collapsed), hovering a header previews it on the map, hub spokes are off by default, and collapsing a family clears a focus or pin inside it.
-4. Done: Carina (`depots/carina.json`), viewable at `?depot=carina` until the selector exists. Mark chose two hubs, Woolloongabba station and Carindale Shopping Centre, so the page now handles any number of hubs. One- and two-digit routes (29, 61) are each their own group, named by the number. Carina's area descriptions and suburb label positions are drafts for Mark to check.
-5. Next: depot selector and "All", pre-built per selection (see design below).
-6. Weekly schedule on the workflow, redeploying only when the feed changed.
+4. Done: Carina (`depots/carina.json`). Mark chose two hubs, Woolloongabba station and Carindale Shopping Centre, so the page now handles any number of hubs. One- and two-digit routes (29, 61) are each their own group, named by the number. Carina's area descriptions and suburb label positions are drafts for Mark to check.
+5. Done: depot selector (Toowong, Carina, All) in the panel; the choice is in the URL hash (`#carina`, `#all`) so views can be shared, and switching loads data in place. "All" is built whenever more than one depot is built (`depots.combine`): routes on several lists appear once, hubs/anchors/areas/suburb labels are merged, families merge by label and sort by hundreds. Depots list in the order given by `"order"` in their config. Mark chose to keep Toowong's colours and pick Carina's to stay distinct from all 21 groups (rather than strict hue families per hundred).
+6. Next: weekly schedule on the workflow, redeploying only when the feed changed.
 7. Docs.
 
 Real tiles (goal 2) are deferred. Findings so far: CARTO raster tiles now need a free API key per site (5M requests/month free for non-commercial use; keys are requested by email at carto.com/basemaps/apikey). OpenFreeMap needs no key and has Positron and Dark styles, but is vector-only, so it needs MapLibre GL plus `@maplibre/maplibre-gl-leaflet`.
@@ -104,7 +104,7 @@ Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, nump
 - **Fit-all view:** the page opens fitted to the bounds of all zones with 16 px padding, and returns there when selections are cleared. `zoomSnap` is 0.25 and `zoomDelta` is 0.5.
 - **UQ hub card:** weekday stop visits per group at Chancellors Place (Toowong: 41x 333, 42x 126, 40x 96, 43x 48). Spokes run from each group's anchor to UQ, with line width scaled to visits.
 
-## Design for the depot selector (agreed, not built)
+## Design for the depot selector (built in step 5)
 
 - **Colour by prefix group, not by depot**, so 41x looks the same in every view.
 - **Pre-build each selection.** Which group "owns" a stop depends on which routes are included, so build zones, cells and summaries once per depot and once for "All". Write them to `data/<depot>/`.

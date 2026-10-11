@@ -20,7 +20,7 @@ concurrency:
 
 env:
   FEED_URL: https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip
-  DEPOTS: toowong carina
+  DEPOTS: ""  # empty = every depot in depots/, in config order, plus "All"
 
 jobs:
   build:
@@ -50,7 +50,7 @@ jobs:
           cat "$GTFS_DIR/feed_info.txt"
 
       - name: Build site data
-        run: python -m busrads build --gtfs "$GTFS_DIR" --depot $DEPOTS
+        run: python -m busrads build --gtfs "$GTFS_DIR" ${DEPOTS:+--depot $DEPOTS}
 
       - uses: actions/configure-pages@v6
 

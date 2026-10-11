@@ -8,7 +8,7 @@ This is an unofficial tool, not affiliated with Brisbane City Council or Transli
 
 ## Status
 
-Toowong depot is live. Carina and a depot selector (Toowong, Carina, All) are next, then real map tiles and a weekly automatic refresh. `CLAUDE.md` has the full context, decisions and plan.
+Toowong and Carina depots are live, with a selector for each depot or all of them (link straight to one with `#toowong`, `#carina` or `#all`). A weekly automatic refresh and real map tiles are next. `CLAUDE.md` has the full context, decisions and plan.
 
 - `busrads/`: the Python data build
 - `depots/`: route lists (`<depot>.txt`) and display config (`<depot>.json`) for each depot
@@ -28,7 +28,7 @@ python -m venv .venv
 .venv\Scripts\python -m pytest tests
 ```
 
-Output goes to `site/data/<depot>/` (gitignored), plus a shared `site/data/base.json` for the drawn basemap. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
+Output goes to `site/data/<depot>/` (gitignored), plus `site/data/all/` when more than one depot is built, a shared `site/data/base.json` for the drawn basemap, and `site/data/index.json` listing what was built. To add a depot, drop `<id>.txt` (route list) and `<id>.json` (display config) into `depots/`. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
 
 ## Viewing it locally
 

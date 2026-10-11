@@ -75,4 +75,52 @@ def load_depot(depots_dir, depot_id):
 
 
 def depot_ids(depots_dir):
-    return sorted(p.stem for p in Path(depots_dir).glob("*.txt"))
+    """Every depot with a route list, in the order the site lists them: by the
+    optional "order" in its config, then by id."""
+    d = Path(depots_dir)
+
+    def order(i):
+        cfg = d / f"{i}.json"
+        return json.loads(cfg.read_text(encoding="utf-8")).get("order", 999) if cfg.exists() else 999
+
+    return sorted((p.stem for p in d.glob("*.txt")), key=lambda i: (order(i), i))
+
+
+def _family_order(label):
+    """'100s · south-east' sorts by its hundreds; anything else (inner-city links) goes last."""
+    m = re.match(r"(\d+)s\b", label)
+    return (int(m.group(1)) if m else 10_000, label)
+
+
+def combine(depots, id="all", name="All depots"):
+    """One selection covering several depots. A route on more than one list
+    appears once; hubs, anchors, families, areas and suburb labels are merged."""
+    routes = sorted({r for d in depots for r in d.routes}, key=route_key)
+    hubs, seen = [], set()
+    anchors, places, place_names = {}, [], set()
+    fam_groups, areas = {}, {}
+    assigned = set()
+    for d in depots:
+        for h in d.hubs:
+            if h["name"] not in seen:
+                seen.add(h["name"])
+                hubs.append(h)
+        for g, a in d.anchors.items():
+            anchors.setdefault(g, a)
+        for p in d.places:
+            if p[0] not in place_names:
+                place_names.add(p[0])
+                places.append(p)
+        for f in d.families:
+            gs = fam_groups.setdefault(f["label"], [])
+            for g in f["groups"]:
+                if g not in assigned:   # a group sits in the first family that lists it
+                    assigned.add(g)
+                    gs.append(g)
+        for g, text in d.areas.items():
+            if text not in areas.setdefault(g, []):
+                areas[g].append(text)
+    families = [{"label": lab, "groups": sorted(gs, key=route_key)}
+                for lab, gs in sorted(fam_groups.items(), key=lambda kv: _family_order(kv[0])) if gs]
+    return Depot(id=id, name=name, routes=routes, hubs=hubs, anchors=anchors, families=families,
+                 areas={g: "; ".join(t) for g, t in areas.items()}, places=places)

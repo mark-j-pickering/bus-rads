@@ -41,8 +41,11 @@ def build(gtfs_dir, out_dir, depots_dir, ids, day=None):
     shape_points = feed.shapes(shape_ids)
     log(f"{shape_points.shape_id.nunique()} shapes")
 
+    # With more than one depot, also build "All": one selection over every depot's routes.
+    # Group ownership of stops depends on which routes are included, so it can't be merged afterwards.
+    selections = sel + ([depots.combine(sel)] if len(sel) > 1 else [])
     built = []
-    for d in sel:
+    for d in selections:
         res = analysis.build_selection(
             feed, d, routes[routes.route_short_name.isin(d.feed_routes)],
             day_trips, stop_times, shape_points)
