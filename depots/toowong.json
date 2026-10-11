@@ -1,0 +1,44 @@
+{
+ "name": "Toowong",
+ "hubs": [
+  {
+   "name": "UQ Chancellors Place",
+   "short": "UQ",
+   "match": "university of queensland|uq lakes|chancellors place|uq ",
+   "at": [-27.49813, 153.0111]
+  }
+ ],
+ "anchors": {
+  "40x": [-27.4848, 152.9925]
+ },
+ "families": [
+  {"label": "300s · north-west", "groups": ["34x", "36x", "37x", "38x", "39x"]},
+  {"label": "400s · west", "groups": ["40x", "41x", "42x", "43x", "44x", "47x"]},
+  {"label": "Inner-city links", "groups": ["19x", "30x"]}
+ ],
+ "areas": {
+  "19x": "West End – Teneriffe ferry link",
+  "30x": "RBWH – Teneriffe",
+  "34x": "Stafford, Grange, Gordon Park",
+  "36x": "Brookside, Everton Park, Herston",
+  "37x": "Ashgrove & Bardon",
+  "38x": "The Gap",
+  "39x": "Mitchelton",
+  "40x": "Toowong – UQ shuttle (shares 41x/47x stops)",
+  "41x": "UQ, Taringa, Indooroopilly, Long Pocket",
+  "42x": "Chapel Hill",
+  "43x": "Kenmore South, Fig Tree Pocket, Brookfield",
+  "44x": "Moggill, Kenmore, Fig Tree Pocket",
+  "47x": "Toowong, Rainworth, Mt Coot-tha"
+ },
+ "places": [
+  ["The Gap", -27.443, 152.944], ["Ashgrove", -27.442, 152.987], ["Bardon", -27.461, 152.975],
+  ["Mitchelton", -27.415, 152.978], ["Everton Park", -27.403, 152.992], ["Stafford", -27.411, 153.013],
+  ["Herston", -27.446, 153.021], ["Toowong", -27.484, 152.992], ["St Lucia", -27.502, 153.003],
+  ["Indooroopilly", -27.503, 152.975], ["Chapel Hill", -27.497, 152.95], ["Kenmore", -27.508, 152.938],
+  ["Fig Tree Pocket", -27.528, 152.962], ["Brookfield", -27.494, 152.912], ["Pullenvale", -27.52, 152.89],
+  ["Moggill", -27.571, 152.874], ["Bellbowrie", -27.561, 152.89], ["Mt Coot-tha", -27.476, 152.957],
+  ["City", -27.469, 153.024], ["West End", -27.481, 153.008], ["Teneriffe", -27.456, 153.048],
+  ["Long Pocket", -27.512, 152.995], ["Taringa", -27.491, 152.979]
+ ]
+}

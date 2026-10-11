@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bus RADS</title>
+<meta name="description" content="Brisbane bus routes and depot service zones. An unofficial map built from Translink's open GTFS feed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+  <div id="map" role="application" aria-label="Map of depot service zones"></div>
+  <aside class="panel" id="panel">
+    <button class="sheet-tab" id="sheetTab" aria-label="Expand or collapse panel"><span></span></button>
+    <div class="head">
+      <div class="eyebrow" id="eyebrow">Weekday</div>
+      <h1>Bus RADS</h1>
+      <p class="tagline">Brisbane bus routes and depot service zones</p>
+      <p class="sub">Each stop is coloured by the prefix group that runs most of its weekday trips. Stops shared between groups are grey. City stops and hubs are left out so the zones show where routes start.</p>
+      <div class="seg" role="group" aria-label="Map view">
+        <button id="vZones" aria-pressed="true">Zones</button>
+        <button id="vRoutes" aria-pressed="false">Routes</button>
+        <button id="vBoth" aria-pressed="false">Both</button>
+      </div>
+      <div class="toggles">
+        <label id="lSpokes"><input type="checkbox" id="tSpokes" checked> <span id="spokesName">Hub</span> spokes</label>
+        <label><input type="checkbox" id="tShared" checked> Shared corridors</label>
+        <label><input type="checkbox" id="tLabels" checked> Suburbs</label>
+      </div>
+    </div>
+    <div class="list" id="list"><p class="loading">Loading…</p></div>
+    <div class="foot" id="foot"></div>
+  </aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
