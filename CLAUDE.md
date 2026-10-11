@@ -17,7 +17,7 @@ The prototype was built in a Claude chat session as a single self-contained HTML
 ## Goals for this repo
 
 1. **Repo and hosting.** Publish to GitHub Pages as a normal static site: one `index.html` plus JSON or GeoJSON data files, not one 3 MB inlined page.
-2. **Real basemap.** The artifact sandbox blocked map tiles, so the prototype draws roads, rail and river from GTFS shape geometry (`base.json`). Replace this with an OSM-based tile provider such as OpenFreeMap or CARTO. Avoid tile.openstreetmap.org, whose usage policy rules out heavy use.
+2. **Real basemap** (done: OpenFreeMap Liberty, see Progress). The artifact sandbox blocked map tiles, so the prototype draws roads, rail and river from GTFS shape geometry (`base.json`). Replace this with an OSM-based tile provider such as OpenFreeMap or CARTO. Avoid tile.openstreetmap.org, whose usage policy rules out heavy use.
 3. **Depot selector.** Offer Toowong, Carina and "All". More depots can be added later by dropping a route list in `depots/`.
 4. **Automatic refresh.** A scheduled GitHub Action should download the GTFS feed, rebuild the data and redeploy. The current feed runs 10 Oct to 9 Dec 2026.
 
@@ -81,15 +81,15 @@ The prototype ran as three steps; `busrads/` now replaces all three, but this de
    - **Per-stop details:** route trip counts (`rc`, for example `380:31 382:3`) and other routes from any operator stopping there (`other`). This produces `stops.geojson`.
    - **Group and hub summary:** `meta.json`.
    - Metric work is done in GDA2020 / MGA zone 56 (**EPSG:7856**).
-2. **`base.py GTFS_DIR OUT_DIR`** builds the drawn basemap from every bus, rail and ferry shape. Drop this once real tiles are in. It also merges the two UQ hub stops.
+2. **`base.py GTFS_DIR OUT_DIR`** builds the drawn basemap from every bus, rail and ferry shape. Ported to `busrads/basemap.py` and kept only as the no-WebGL fallback. It also merged the two UQ hub stops (now hub config).
 3. **`assemble.py SCRATCH_DIR`** inlines Leaflet CSS and all data into `page_template.html`. It also works out spoke anchor points per group, placing each at a representative point of the group's largest zone part, with 40x pinned at Toowong.
 
-Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, numpy). On the client side the page uses Leaflet 1.9.4.
+Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, numpy). On the client side the page uses Leaflet 1.9.4, plus MapLibre GL 5.24.0 and `@maplibre/maplibre-gl-leaflet` 0.1.4 for the street map.
 
 ## UI behaviour to keep (all working in the prototype)
 
 - **Layout:** the map sits on the left with a panel on the right. At 760 px or narrower the panel becomes a bottom sheet. Light and dark themes are both supported.
-- **Views:** Zones, Routes and Both. Toggles control UQ spokes, shared corridors and suburb labels. Suburb labels are hand-placed in `PLACES`.
+- **Views:** Zones, Routes and Both. Toggles control hub spokes (off by default), shared corridors and map labels (the street map's own labels, drawn above the zones; hand-placed `places` labels only appear with the drawn fallback).
 - **Legend:** groups are arranged by family (300s north-west, 400s west, inner-city links). Each row shows the group colour, its prefix, an area description (`AREA` map) and its weekday trip total.
   - Clicking a group row focuses it. The map zooms to the group, shades its full corridor with main paths stronger than variants, and dims other groups.
   - Clicking the row again zooms back out to the fit-all view.
@@ -112,7 +112,7 @@ Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, nump
 - **Pre-build each selection.** Which group "owns" a stop depends on which routes are included, so build zones, cells and summaries once per depot and once for "All". Write them to `data/<depot>/`.
 - **"All" needs a bigger palette,** possibly 25 or more groups. Give each hundred its own hue family (2xx south and east, 3xx north-west, 4xx west, and so on) with a different shade for each prefix.
 - **Hubs per depot,** set in config. "All" shows every depot's hubs. Carina's hubs are not yet known; let the data suggest them by finding stops visited by the most groups.
-- `AREA` descriptions and suburb labels should move into per-depot config. Carina's 2xx areas still need writing.
+- `AREA` descriptions and suburb labels moved into per-depot config (done). Carina's area descriptions are still drafts.
 
 ## Findings so far (Toowong)
 
@@ -126,5 +126,5 @@ Dependencies are in `requirements.txt` (pandas, geopandas, shapely, pyproj, nump
 ## Open items
 
 - Decide whether to add the school feed as a separate layer.
-- Mark to check Carina's draft area descriptions and suburb labels (`depots/carina.json`).
+- Mark to check Carina's draft area descriptions (`depots/carina.json`).
 - Optionally draw the event precinct overlays (Suncorp, Gabba).

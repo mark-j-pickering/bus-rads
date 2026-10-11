@@ -28,7 +28,7 @@ python -m venv .venv
 .venv\Scripts\python -m pytest tests
 ```
 
-Output goes to `site/data/<depot>/` (gitignored), plus `site/data/all/` (every route the operator runs), a shared `site/data/base.json` for the drawn basemap, and `site/data/index.json` listing what was built. To add a depot, drop `<id>.txt` (route list) and `<id>.json` (display config) into `depots/`. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
+Output goes to `site/data/<depot>/` (gitignored), plus `site/data/all/` (every route the operator runs), a shared `site/data/base.json` (the drawn fallback map for devices without WebGL), and `site/data/index.json` listing what was built. To add a depot, drop `<id>.txt` (route list) and `<id>.json` (display config) into `depots/`. The build picks the service day itself (the busiest Tue–Thu early in the feed, preferring Wednesday); `--day YYYY-MM-DD` overrides it.
 
 ## Viewing it locally
 
