@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Bus RADS
 
 **Bus RADS** stands for **R**outes **A**nd **D**epot **S**ervice zones. Use "Bus RADS" as the site title and header, with the subtitle "Brisbane bus routes and depot service zones". The repo and site slug is `bus-rads`. Keep "BCC" and "Translink" out of the name so it reads as an unofficial drivers' tool; they can appear in the subtitle or footer.
@@ -39,6 +43,29 @@ Working through the goals one step at a time, Toowong end-to-end first:
 7. Docs.
 
 Real tiles (goal 2): done after step 5. Default basemap is **OpenFreeMap Liberty** (Mark chose it because its colours look like a Refidex), OpenFreeMap Dark in dark mode, rendered with MapLibre GL 5.24.0 via `@maplibre/maplibre-gl-leaflet` 0.1.4. The style is split in the page: non-label layers in Leaflet's tile pane under the zones, label layers in a `maplabels` pane above them, so suburb and street names stay readable; the "Labels" toggle controls that pane. Hand-placed `places` labels and the drawn basemap (`base.json`) are now only the fallback for devices without WebGL. `?basemap=<id>` (drawn, openfreemap = Positron, liberty, carto, stadia, esri) previews alternatives with a picker. Earlier findings: Findings so far: CARTO raster tiles now need a free API key per site (5M requests/month free for non-commercial use; keys are requested by email at carto.com/basemaps/apikey). OpenFreeMap needs no key and has Positron and Dark styles, but is vector-only, so it needs MapLibre GL plus `@maplibre/maplibre-gl-leaflet`.
+
+## Commands
+
+Windows dev box with a `.venv`; the unzipped feed goes in `gtfs/` (or `gtfs/SEQ_GTFS/`), which is gitignored like `site/data/`.
+
+```
+.venv\Scripts\python -m busrads build                     # every depot in depots/ plus "All"
+.venv\Scripts\python -m busrads build --depot toowong     # one depot (still builds "All" and base.json)
+.venv\Scripts\python -m busrads build --day 2026-10-14    # override the service day
+.venv\Scripts\python -m pytest tests                      # unit tests (no feed needed)
+.venv\Scripts\python -m pytest tests -k combine           # a single test
+serve.bat                                                 # build if needed, serve site/ on :8765 with no caching
+```
+
+There is no linter or JS build step. The site is plain files in `site/` served as they are. Opening `index.html` as a file won't work because it fetches `data/`.
+
+## Code layout
+
+- `busrads/cli.py` `build()` is the whole pipeline. It loads the feed once (`feed.Feed`: stop_times read in chunks, filtered to the service day's trips), picks the operator suffix and the service day, then runs `analysis.build_selection` once for each depot and once for "All". Each run writes `site/data/<id>/{zones,cells,routes,routebuf,groupbuf,stops}.geojson` and `meta.json`, then `index.json` and the shared `base.json`.
+- `feed.py` handles GTFS I/O, operator detection (`select_routes`, `operator_routes`) and service-day selection. `depots.py` handles route-list parsing, `group_of`, depot config, `combine` and the "All" selection (`all_routes_selection`, `auto_area`). `analysis.py` does stop classification, Voronoi catchments, corridor buffers, and the hub, group and anchor summaries. `palette.py` gives the per-hundred colours for All. `export.py` writes GeoJSON and JSON with rounded coordinates.
+- `site/js/app.js` is the whole client. It reads `data/index.json` for the depot list and build id, then loads one depot's files (each request carries `?v=<build id>`) and builds the legend, hubs and colours from `meta.json`. Group colours come from `meta.colors` (All only, light and dark), otherwise from the hand-picked `--g<prefix>` CSS variables in `site/css/app.css` (light, dark and `[data-theme]` blocks), so a new depot's groups need entries there.
+- Cache-busting has two parts: data files are versioned by `build` in `index.json`, and the deploy workflow `sed`-stamps `?v=<sha>` onto the CSS/JS URLs in `site/*.html`. Keep those asset paths literal (`css/app.css`, `js/app.js`, `css/help.css`) so the stamp still matches.
+- `tests/test_build.py` tests the pure functions with small in-memory DataFrames. CI runs it before downloading the feed.
 
 ## Build notes
 
