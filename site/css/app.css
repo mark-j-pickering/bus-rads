@@ -2,14 +2,18 @@
    Colour is per prefix group and the same in every depot view. Toowong's groups: cool = 3xx north-west,
    warm = 4xx west, slate = inner-city links. Other depots' groups were picked to stay distinct from every
    other group when all depots are shown together (CIELAB distance about 18+, as close as Toowong's own pairs). */
-:root{
+/* The palette is defined for the page and again for #map[data-map], so the map's Day / Night choice
+   can differ from the panel, which always follows the device. */
+:root,#map[data-map="light"]{
   --bg:#eef0ee; --ground:#e3e7e4; --panel:#fbfcfb; --fg:#1d2422; --muted:#5d6a66; --line:#cfd6d2;
   --road:#b9c2be; --rail:#8a9490; --river:#9ec3d6; --label:#4a5653; --focus:#1d5bd8;
   --g19x:#66727f; --g30x:#94877a;
   --g34x:#3a5fc2; --g36x:#138fa3; --g37x:#3c9446; --g38x:#7a4bc2; --g39x:#86a01f;
   --g40x:#c2306b; --g41x:#d6402a; --g42x:#e2790f; --g43x:#b48a06; --g44x:#8e3a1c; --g47x:#cf5fa3;
   --g17x:#8c3a52; --g18x:#2a78a8; --g20x:#a33a9a; --g21x:#2aa88f; --g22x:#8a7a3a; --g23x:#4d3659; --g29:#6b4a2c; --g61:#3e5936;
-  --hub:#c2306b; --shared:#8d9692; --cbd:#a9b1ad;
+  --hub:#c2306b; --shared:#8d9692; --cbd:#a9b1ad; color-scheme:light }
+:root{
+  --bar:58px;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -22,7 +26,7 @@
   --g40x:#f0609a; --g41x:#ff6f55; --g42x:#ffa040; --g43x:#e2b737; --g44x:#d06a45; --g47x:#f08fca;
   --g17x:#d07a92; --g18x:#62aee0; --g20x:#dd78d4; --g21x:#5fd8bd; --g22x:#c9b86a; --g23x:#845f96; --g29:#b88a5c; --g61:#6d965f;
   --hub:#f0609a; --shared:#6f7a76; --cbd:#56605c; color-scheme:dark }}
-:root[data-theme="dark"]{
+:root[data-theme="dark"],#map[data-map="dark"]{
   --bg:#141917; --ground:#1a201e; --panel:#1c2321; --fg:#e7ece9; --muted:#9aa8a3; --line:#2f3a37;
   --road:#3b4744; --rail:#5b6965; --river:#2c4f63; --label:#a8b5b0; --focus:#7aa7ff;
   --g19x:#94a1ae; --g30x:#b8aa9b;
@@ -94,7 +98,16 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;margi
 .bar{display:grid;grid-template-columns:34px 1fr 36px;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
 .bar i{display:block;height:8px;border-radius:2px}
 .foot{padding:10px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.45}
-.sheet-tab{display:none}
+.sheet-bar,.scrim{display:none}
+.prefs{display:flex;gap:8px}
+.prefs .seg{flex:1;margin-top:2px}
+.seg.sm button{font-size:12px;padding:5px 4px}
+.seg[hidden]{display:none}
+.sheet-clear:focus-visible,.sheet-tab:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+/* Grey street map: only the street map's own panes, so the zones and routes keep their colours. */
+.grey .leaflet-tile-pane,.grey .leaflet-maplabels-pane{filter:grayscale(1)}
+.prefs{align-items:center}
+.prefs-lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .lbl{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--label);white-space:nowrap;text-shadow:0 0 3px var(--ground),0 0 3px var(--ground),0 0 6px var(--ground);pointer-events:none}
 .leaflet-tooltip.lbl-wrap{background:none;border:0;box-shadow:none;padding:0}
 .leaflet-tooltip.lbl-wrap::before{display:none}
@@ -106,14 +119,30 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;margi
 .leaflet-control-attribution{background:var(--panel)!important;color:var(--muted)!important;font-size:10px}
 @media (max-width:760px){
   .app{grid-template-columns:1fr;grid-template-rows:1fr}
-  .panel{position:absolute;left:0;right:0;bottom:0;height:46%;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;z-index:1000;box-shadow:0 -4px 18px rgba(0,0,0,.15);padding-bottom:env(safe-area-inset-bottom,0px);transition:height .25s}
-  .panel.min{height:132px}
-  .sheet-tab{display:block;width:100%;border:0;background:none;padding:8px 0 0;cursor:pointer}
-  .sheet-tab span{display:block;margin:auto;width:40px;height:4px;border-radius:2px;background:var(--line)}
-  .head{padding-top:6px}
-  h1{font-size:24px}
-  .tagline{font-size:14px}
-  .sub{display:none}
+  /* Bottom sheet: closed it is just the bar (--bar tall); open it slides up over most of the map. */
+  .panel{position:absolute;left:0;right:0;bottom:0;height:var(--bar);overflow:hidden;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;z-index:1000;box-shadow:0 -4px 18px rgba(0,0,0,.15);padding-bottom:env(safe-area-inset-bottom,0px);transition:height .25s}
+  /* Open, the whole sheet scrolls as one (legend, then credits) under a bar that stays put. */
+  .panel{display:block}
+  .panel.open{height:82%;overflow-y:auto;overscroll-behavior:contain}
+  .list{overflow:visible}
+  .sheet-bar{display:flex;align-items:stretch;height:var(--bar);touch-action:none;border-bottom:1px solid transparent;position:sticky;top:0;z-index:1;background:var(--panel)}
+  .panel.open .sheet-bar{border-bottom-color:var(--line)}
+  .sheet-tab{flex:1;min-width:0;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr;align-items:center;gap:0 10px;border:0;background:none;color:var(--fg);font:inherit;text-align:left;padding:6px 16px 0;cursor:pointer}
+  .sheet-tab .grip{grid-column:1/-1;justify-self:center;width:40px;height:4px;border-radius:2px;background:var(--line)}
+  .sheet-tab .chev{transform:rotate(-135deg) translate(-1px,-1px);color:var(--muted)}
+  .panel.open .sheet-tab .chev{transform:rotate(45deg) translate(-2px,-2px)}
+  .sheet-sum{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+  .sheet-sum b{font-family:var(--display);font-weight:700;font-size:20px;line-height:1}
+  .sheet-sum .sa{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--muted)}
+  .sheet-sum .sw{flex:none}
+  .sheet-clear{flex:none;align-self:center;width:40px;height:40px;margin-right:8px;border:1px solid var(--line);border-radius:50%;background:var(--panel);color:var(--fg);font:400 22px/1 var(--body);cursor:pointer}
+  .sheet-clear[hidden]{display:none}
+  .scrim{display:block;position:absolute;inset:0;z-index:999;background:rgba(0,0,0,.18)}
+  .scrim[hidden]{display:none}
+  /* Keep the map's credits and controls clear of the bar. */
+  .leaflet-bottom{bottom:calc(var(--bar) + env(safe-area-inset-bottom,0px))}
+  .head{padding-top:10px}
+  h1,.tagline,.sub{display:none}   /* the bar carries the title */
 }
 @media (prefers-reduced-motion:reduce){.panel,.chev{transition:none}}
 #bmPick{font:500 12.5px var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 6px;flex-basis:100%}

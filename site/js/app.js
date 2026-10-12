@@ -1,4 +1,10 @@
 (async function(){
+// The map's own palette (Day / Night, or Auto to follow the device) and grey street map, saved per
+// browser. They live on #map, which carries its own copy of the colour variables; the panel always
+// follows the device. Applied first, before any data loads.
+const mapBox=document.getElementById('map'),MAP_KEY='busrads.map',GREY_KEY='busrads.grey';
+try{const m=localStorage.getItem(MAP_KEY);if(m==='light'||m==='dark')mapBox.dataset.map=m;
+  mapBox.classList.toggle('grey',!!localStorage.getItem(GREY_KEY))}catch(e){}
 const get=p=>fetch(p).then(r=>{if(!r.ok)throw new Error(`${p}: HTTP ${r.status}`);return r.json()});
 const list=document.getElementById('list');
 const fail=err=>{list.innerHTML=`<p class="error">Couldn't load the map data (${err.message}).</p>`};
@@ -11,10 +17,11 @@ try{
 }catch(err){fail(err);return}
 const DEPOTS=index.depots;
 
-const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+// Map colours are read from #map, so they follow the map's palette rather than the page's.
+const css=n=>getComputedStyle(mapBox).getPropertyValue(n).trim();
 // Group colours: the "All" view ships its own (one hue family per hundred) in meta.colors;
 // depot views use the hand-picked --g<group> colours in the CSS.
-const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches};
+const isDark=()=>{const m=mapBox.dataset.map||document.documentElement.dataset.theme;return m?m==='dark':matchMedia('(prefers-color-scheme: dark)').matches};
 const col=g=>(meta&&meta.colors&&meta.colors[isDark()?'dark':'light'][g])||css('--g'+g)||'#888';
 
 // Fitting bounds into a zero-size container gives a NaN zoom, so wait until the map has a size
@@ -26,6 +33,35 @@ const map=L.map(mapEl,{zoomControl:true,preferCanvas:true,attributionControl:tru
 new ResizeObserver(()=>map.invalidateSize()).observe(mapEl);
 map.attributionControl.setPrefix(false).addAttribution('Data: Translink SEQ GTFS (CC BY 4.0)');
 const R=L.canvas({padding:.3});
+
+// Phones (760 px or narrower): the panel is a bottom sheet, closed to a slim bar by default. The bar
+// covers the bottom of the map, so fitting a view leaves room for it.
+const mq=matchMedia('(max-width:760px)');
+const panel=document.getElementById('panel'),sheetBar=document.getElementById('sheetBar');
+let sheetOpen=false;
+function setSheet(open){
+  sheetOpen=open;const phone=mq.matches;
+  panel.classList.toggle('open',open);
+  document.getElementById('sheetTab').setAttribute('aria-expanded',open);
+  document.getElementById('scrim').hidden=!(phone&&open);
+  // While closed, the folded-away controls are out of reach of the keyboard and screen readers.
+  panel.querySelectorAll('.head,.list,.foot').forEach(el=>el.inert=phone&&!open);
+}
+const closeSheet=()=>{if(sheetOpen)setSheet(false)};
+const pad=n=>{const b=mq.matches?sheetBar.offsetHeight+parseFloat(getComputedStyle(panel).paddingBottom||0):0;
+  return{paddingTopLeft:[n,n],paddingBottomRight:[n,n+b]}};
+// The bar names what's selected, so the sheet can stay closed while you look at the map.
+function syncBar(){
+  if(!meta)return;
+  const sw=g=>`<i class="sw" style="background:${col(g)}"></i>`;
+  let h;
+  if(pinned){const f=routes.features.find(f=>f.properties.route_short_name===pinned);
+    h=`${sw(RG[pinned])}<b>${pinned}</b><span class="sa">${f?f.properties.name:''}</span>`}
+  else if(focus)h=`${sw(focus)}<b>${focus}</b><span class="sa">${AREA[focus]||''}</span>`;
+  else h=`<b>Bus RADS</b><span class="sa">${depotId==='all'?meta.name:meta.name+' depot'} · legend and options</span>`;
+  document.getElementById('sheetSum').innerHTML=h;
+  document.getElementById('sheetClear').hidden=!(pinned||focus);
+}
 
 // Basemap: OpenFreeMap Liberty, street-directory colours (Dark in dark mode), drawn with MapLibre GL. Its roads sit under the
 // zones and its labels in a pane above them, so suburb and street names stay readable everywhere.
@@ -134,7 +170,7 @@ async function loadDepot(id){
   document.getElementById('lSpokes').hidden=!HUBS.length;
   document.getElementById('spokesName').textContent=HUBS.length===1?HUBS[0].short:'Hub';
   document.querySelectorAll('#depotSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===id));
-  map.fitBounds(ZB,{padding:[16,16]});
+  map.fitBounds(ZB,pad(16));
   renderList();draw();
 }
 let focus=null,view='zones',hoverFam=null;
@@ -216,6 +252,7 @@ function restyle(){
   applyHL();
 }
 function applyHL(){
+  syncBar();
   if(L_hl){map.removeLayer(L_hl);L_hl=null}
   if(L_rs){map.removeLayer(L_rs);L_rs=null}
   if(L_zone)L_zone.resetStyle(); if(L_route)L_route.resetStyle();
@@ -237,7 +274,7 @@ function applyHL(){
     pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:3.6,color:css('--panel'),weight:1.5,fillColor:col(p.group),fillOpacity:1}),
     onEachFeature:(f,l)=>l.bindPopup(()=>stopHTML(f.properties,true))}).addTo(map);
 }
-function hlBounds(r){const b=L.geoJSON({type:'FeatureCollection',features:routes.features.filter(f=>f.properties.route_short_name===r)}).getBounds();if(b.isValid())map.flyToBounds(b,{padding:[40,40],maxZoom:14})}
+function hlBounds(r){const b=L.geoJSON({type:'FeatureCollection',features:routes.features.filter(f=>f.properties.route_short_name===r)}).getBounds();if(b.isValid())map.flyToBounds(b,{...pad(40),maxZoom:14})}
 map.on('zoomend',()=>{ syncStops();
   if(!L_labels)return;
   const on=document.getElementById('tLabels').checked&&map.getZoom()>=12; on?L_labels.addTo(map):map.removeLayer(L_labels)});
@@ -274,33 +311,59 @@ function renderList(){
     if(pinIn){pinned=null;hover=null;map.closePopup()}
     renderList();draw();
     focus?groupBounds(focus):goHome()});
-  list.querySelectorAll('.grp').forEach(b=>b.onclick=()=>setFocus(b.dataset.g));
+  // Picking a group or route on a phone closes the sheet, so the map shows the result.
+  list.querySelectorAll('.grp').forEach(b=>b.onclick=()=>{closeSheet();setFocus(b.dataset.g)});
   const chips=[...list.querySelectorAll('.chip')];
   chips.forEach(c=>{const r=c.dataset.r;
     c.onmouseenter=()=>{hover=r;applyHL()};
     c.onmouseleave=()=>{hover=null;applyHL()};
-    c.onclick=()=>pinRoute(r);});
+    c.onclick=()=>{closeSheet();pinRoute(r)};});
   list.querySelectorAll('.hubfam').forEach(b=>{const h=HUBS[+b.dataset.h];
     b.onclick=()=>{hubsOpen.has(h.name)?hubsOpen.delete(h.name):hubsOpen.add(h.name);try{localStorage.setItem(HUBS_KEY,JSON.stringify([...hubsOpen]))}catch(e){}renderList()};
     // Hovering previews the groups that serve this hub, with its spokes even if the toggle is off.
     if(canHover){
       b.onmouseenter=()=>{hoverFam='hub:'+b.dataset.h;const hs=hubSpokes[+b.dataset.h];if(hs&&!map.hasLayer(L_spokes)){hs.addTo(map);spokesPreview=hs}restyle()};
       b.onmouseleave=()=>{hoverFam=null;if(spokesPreview){map.removeLayer(spokesPreview);spokesPreview=null}restyle()};}});
-  list.querySelectorAll('.hub-go').forEach(b=>{const h=HUBS[+b.dataset.h];b.onclick=()=>{setFocus(null);map.flyTo([h.lat,h.lon],14)}});
+  list.querySelectorAll('.hub-go').forEach(b=>{const h=HUBS[+b.dataset.h];b.onclick=()=>{closeSheet();setFocus(null);map.flyTo([h.lat,h.lon],14)}});
 }
 function setFocus(g){focus=(focus===g)?null:g;
   if(focus&&collapsed.delete(famLabel(focus)))saveCollapsed();
   renderList();draw();
   if(focus)groupBounds(focus);else goHome();}
-function goHome(){map.flyToBounds(ZB,{padding:[16,16]})}
-function groupBounds(g){const b=L.geoJSON(routes,{filter:f=>f.properties.group===g}).getBounds();if(b.isValid())map.flyToBounds(b,{padding:[30,30],maxZoom:14})}
+function goHome(){map.flyToBounds(ZB,pad(16))}
+function groupBounds(g){const b=L.geoJSON(routes,{filter:f=>f.properties.group===g}).getBounds();if(b.isValid())map.flyToBounds(b,{...pad(30),maxZoom:14})}
+function clearSelection(){focus=null;pinned=null;hover=null;map.closePopup();renderList();draw();goHome()}
 const dayText=new Date(index.day+'T00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
 document.getElementById('foot').textContent=`${index.feed}. Trip counts are for ${dayText}. School (7xx) and special (9xx) runs are not in this feed. ${BM==='drawn'?'Basemap drawn from Translink route paths.':'Map © OpenStreetMap contributors, via '+BASEMAPS[BM].label.split(' ')[0]+'.'} Unofficial; not affiliated with Brisbane City Council or Translink. `;
 {const a=document.createElement('a');a.href='help.html';a.textContent='How this map works';document.getElementById('foot').append(a)}
 const views={vZones:'zones',vRoutes:'routes',vBoth:'both'};
 Object.keys(views).forEach(id=>document.getElementById(id).onclick=()=>{view=views[id];Object.keys(views).forEach(k=>document.getElementById(k).setAttribute('aria-pressed',k===id));draw()});
 ['tSpokes','tShared','tLabels'].forEach(id=>document.getElementById(id).onchange=draw);
-const panel=document.getElementById('panel');document.getElementById('sheetTab').onclick=()=>panel.classList.toggle('min');
+['sheetTab','sheetClear','scrim'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{
+  if(id==='sheetTab')setSheet(!sheetOpen);else if(id==='scrim')setSheet(false);else clearSelection()}));
+// Swiping the bar up or down opens or closes the sheet; preventing the touchend stops the tap toggling it back.
+{let y0=null;const bar=document.getElementById('sheetBar');
+  bar.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
+  bar.addEventListener('touchend',e=>{if(y0===null)return;const dy=e.changedTouches[0].clientY-y0;y0=null;
+    if(Math.abs(dy)>30){e.preventDefault();setSheet(dy<0)}},{passive:false});}
+mq.addEventListener('change',()=>setSheet(sheetOpen));
+setSheet(false);
+// Map palette: Auto / Day / Night picks the street map style and the zone colours drawn on it.
+// Grey is a CSS filter on the street map's panes only, so the zones keep their colours.
+const mapSeg=document.getElementById('mapSeg'),greySeg=document.getElementById('greySeg');
+function syncPrefs(){const m=mapBox.dataset.map||'auto',g=mapBox.classList.contains('grey');
+  mapSeg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
+  greySeg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',(b.dataset.g==='1')===g))}
+mapSeg.querySelectorAll('button').forEach(b=>b.onclick=()=>{const m=b.dataset.m;
+  if((mapBox.dataset.map||'auto')===m)return;
+  if(m==='auto')delete mapBox.dataset.map;else mapBox.dataset.map=m;
+  try{m==='auto'?localStorage.removeItem(MAP_KEY):localStorage.setItem(MAP_KEY,m)}catch(e){}
+  syncPrefs();retheme()});
+greySeg.querySelectorAll('button').forEach(b=>b.onclick=()=>{const g=b.dataset.g==='1';mapBox.classList.toggle('grey',g);
+  try{g?localStorage.setItem(GREY_KEY,'1'):localStorage.removeItem(GREY_KEY)}catch(e){}
+  syncPrefs()});
+greySeg.hidden=BM==='drawn';   // the drawn fallback map is already grey
+syncPrefs();
 // Theme changes recolour both the map and the panel (colours are resolved per theme in JS).
 const retheme=()=>{renderList();draw()};
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',retheme);
