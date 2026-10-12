@@ -14,7 +14,10 @@
 <div class="app">
   <div id="map" role="application" aria-label="Map of depot service zones"></div>
   <aside class="panel" id="panel">
-    <button class="sheet-tab" id="sheetTab" aria-label="Expand or collapse panel"><span></span></button>
+    <div class="sheet-bar" id="sheetBar">
+      <button class="sheet-tab" id="sheetTab" aria-expanded="false" aria-controls="panel"><span class="grip" aria-hidden="true"></span><span class="sheet-sum" id="sheetSum"><b>Bus RADS</b></span><i class="chev" aria-hidden="true"></i></button>
+      <button class="sheet-clear" id="sheetClear" aria-label="Clear selection" hidden>×</button>
+    </div>
     <div class="head">
       <div class="toprow"><div class="eyebrow" id="eyebrow">Weekday</div><a class="help-link" href="help.html" title="How to read and use this map"><span aria-hidden="true">?</span> Help</a></div>
       <h1>Bus RADS</h1>
@@ -31,10 +34,23 @@
         <label><input type="checkbox" id="tShared" checked> Shared corridors</label>
         <label><input type="checkbox" id="tLabels" checked> Labels</label>
       </div>
+      <div class="prefs">
+        <span class="prefs-lbl">Map</span>
+        <div class="seg sm" id="mapSeg" role="group" aria-label="Map colours">
+          <button data-m="auto" aria-pressed="true" title="Follow this device's light or dark setting">Auto</button>
+          <button data-m="light" aria-pressed="false">Day</button>
+          <button data-m="dark" aria-pressed="false">Night</button>
+        </div>
+        <div class="seg sm" id="greySeg" role="group" aria-label="Street map in colour or grey">
+          <button data-g="0" aria-pressed="true">Colour</button>
+          <button data-g="1" aria-pressed="false">Grey</button>
+        </div>
+      </div>
     </div>
     <div class="list" id="list"><p class="loading">Loading…</p></div>
     <div class="foot" id="foot"></div>
   </aside>
+  <div class="scrim" id="scrim" hidden></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="js/app.js"></script>

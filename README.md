@@ -8,7 +8,7 @@ This is an unofficial tool, not affiliated with Brisbane City Council or Transli
 
 ## Status
 
-Toowong and Carina depots are live, plus an "All" view of every Brisbane City Council bus route, with a selector between them (link straight to one with `#toowong`, `#carina` or `#all`). The street map is OpenFreeMap's Liberty style. A weekly automatic refresh is next. `CLAUDE.md` has the full context, decisions and plan.
+Toowong and Carina depots are live, plus an "All" view of every Brisbane City Council bus route, with a selector between them (link straight to one with `#toowong`, `#carina` or `#all`). The street map is OpenFreeMap's Liberty style, with a Day / Night map palette and a grey option; on phones the panel folds down to a slim bar so the map gets the screen. A weekly automatic refresh is next. `CLAUDE.md` has the full context, decisions and plan.
 
 - `busrads/`: the Python data build
 - `depots/`: route lists (`<depot>.txt`) and display config (`<depot>.json`) for each depot
